@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib as mp
+import matplotlib as mp 
 import matplotlib.pyplot as plt
 import time
 
@@ -8,6 +8,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset, DataLoader, sampler
 from torch import nn
+import torch.nn.functional as F
 
 from DatasetLoader import DatasetLoader
 from Unet2D import Unet2D
@@ -91,12 +92,43 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 def acc_metric(predb, yb):
     return (predb.argmax(dim=1) == yb.cuda()).float().mean()
 
+def dice_metric(predb, yb, smooth = 1e-5):
+    probs = F.softmax(predb, dim=1)
+    probs = probs.argmax(dim=1)
+    #print(probs.shape, yb.shape)
+    
+    batch_size = probs.size(0)
+    
+    # Flatten
+    pred = probs.view(batch_size, -1)
+    target = yb.cuda().view(batch_size, -1)
+    #print(pred.shape, target.shape)
+    
+    # There are two different computationa formulas
+    formula = "v1" 
+    
+    # v1 --> dice = (2 * (pred ∩ gt)) / (pred ∪ gt)
+    if formula == "v1":
+        intersection = (pred * target).sum(1)
+        union = pred.sum(1) + target.sum(1)
+        dice = (2 * intersection + smooth) / (union + smooth)
+    # v2 --> dice = (2 * tp) / (2 * tp + fp + fn)
+    elif formula == "v2": 
+        tp = torch.sum(target * pred, dim = 1)
+        fp = torch.sum(pred, dim = 1) - tp
+        fn = torch.sum(target, dim = 1) - tp
+        dice = (2*tp + smooth) / (2*tp + fp + fn + smooth)  
+    
+    # Take the average value for each image
+    average_dice = dice.sum() / batch_size
+    return 1 - average_dice
+    
 def batch_to_img(xb, idx):
     img = np.array(xb[idx,0:3])
     return img.transpose((1,2,0))
 
 def predb_to_mask(predb, idx):
-    p = torch.functional.F.softmax(predb[idx], 0)
+    p = F.softmax(predb[idx], 0)
     return p.argmax(0).cpu()
 
 def main ():
@@ -107,7 +139,7 @@ def main ():
     bs = 12
 
     #epochs
-    epochs_val = 2 #50
+    epochs_val = 1 #50
 
     #learning rate
     learn_rate = 0.01
@@ -120,7 +152,7 @@ def main ():
     dataset = "CAMUS_resized" # CAMUS_resized (OR) TEE
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'))
-    print(f"Number of items: {len(data)}")
+    print(f"Number of items loaded: {len(data)}")
 
     #split the training dataset and initialize the data loaders
     train_dataset, valid_dataset = torch.utils.data.random_split(data, (300, 150))
@@ -134,11 +166,11 @@ def main ():
         plt.show()
 
     xb, yb = next(iter(train_data))
-    print (xb.shape, yb.shape)
+    print(xb.shape, yb.shape)
 
     # Build the Unet2D with one channel as input and 2 channels as output 
     # Outputs: Probabilities for each class for each pixel in different layer)
-    # CAMPUS_resized has 2 classes (background and the item found in the inag)
+    # CAMPUS_resized has 2 classes (background and the item found in the image)
     unet = Unet2D(1,2)
 
     #loss function and optimizer
@@ -160,10 +192,16 @@ def main ():
     xb, yb = next(iter(train_data))
     with torch.no_grad():
         predb = unet(xb.cuda())
-        
+    
+    # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
-    base_line = 0.93
-    print(f"Final Accuracy: {round(accuracy, 4)} (delta baseline {round(accuracy - base_line, 4)})")
+    baseline_accuracy = 0.93
+    print(f"Final Accuracy: {round(accuracy, 10)} (delta baseline {round(accuracy - baseline_accuracy, 4)})")
+    
+    # Evaluation - Dice score
+    dice_score = dice_metric(predb, yb).item()
+    baseline_dice = dice_score
+    print(f"Final Dice score: {round(dice_score, 10)} (delta baseline {round(dice_score - baseline_dice, 4)})")
 
     #show the predicted segmentations
     if visual_debug:
