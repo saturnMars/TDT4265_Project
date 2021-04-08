@@ -84,7 +84,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
             train_loss.append(epoch_loss) if phase=='train' else valid_loss.append(epoch_loss)
 
     time_elapsed = time.time() - start
-    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))    
+    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     
     return train_loss, valid_loss    
 
@@ -107,7 +107,7 @@ def main ():
     bs = 12
 
     #epochs
-    epochs_val = 50
+    epochs_val = 2 #50
 
     #learning rate
     learn_rate = 0.01
@@ -120,7 +120,7 @@ def main ():
     dataset = "CAMUS_resized" # CAMUS_resized (OR) TEE
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'))
-    print(f"Length data: {len(data)}")
+    print(f"Number of items: {len(data)}")
 
     #split the training dataset and initialize the data loaders
     train_dataset, valid_dataset = torch.utils.data.random_split(data, (300, 150))
@@ -136,7 +136,9 @@ def main ():
     xb, yb = next(iter(train_data))
     print (xb.shape, yb.shape)
 
-    # build the Unet2D with one channel as input and 2 channels as output
+    # Build the Unet2D with one channel as input and 2 channels as output 
+    # Outputs: Probabilities for each class for each pixel in different layer)
+    # CAMPUS_resized has 2 classes (background and the item found in the inag)
     unet = Unet2D(1,2)
 
     #loss function and optimizer
@@ -158,6 +160,10 @@ def main ():
     xb, yb = next(iter(train_data))
     with torch.no_grad():
         predb = unet(xb.cuda())
+        
+    accuracy = acc_metric(predb, yb).item()
+    base_line = 0.93
+    print(f"Final Accuracy: {round(accuracy, 4)} (delta baseline {round(accuracy - base_line, 4)})")
 
     #show the predicted segmentations
     if visual_debug:
