@@ -143,7 +143,7 @@ def main ():
     bs = 12
 
     #epochs
-    epochs_val = 1 #50
+    epochs_val =  5# 50
 
     #learning rate
     learn_rate = 0.01
@@ -203,6 +203,7 @@ def main ():
     print(f"Final Accuracy: {round(accuracy, 10)} (delta baseline {round(accuracy - baseline_accuracy, 4)})")
     
     # Evaluation - Dice score
+    # TODO --> it could be wrongly (always 1) 
     dice_score = dice_metric(predb, yb).item()
     baseline_dice = dice_score
     print(f"Final Dice score: {round(dice_score, 10)} (delta baseline {round(dice_score - baseline_dice, 4)})")
