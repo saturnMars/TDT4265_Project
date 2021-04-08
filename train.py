@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-import matplotlib as mp 
+import matplotlib as mp
+from utils import *
 import matplotlib.pyplot as plt
 import time
 
@@ -16,7 +17,8 @@ from Unet2D import Unet2D
 
 def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     start = time.time()
-    model.cuda()
+    #model.cuda()
+    to_cuda(model)
 
     train_loss, valid_loss = [], []
 
@@ -41,8 +43,10 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 
             # iterate over data
             for x, y in dataloader:
-                x = x.cuda()
-                y = y.cuda()
+                #x = x.cuda()
+                #y = y.cuda()
+                y = to_cuda(y)
+                x = to_cuda(x)
                 step += 1
 
                 # forward pass
@@ -90,7 +94,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     return train_loss, valid_loss    
 
 def acc_metric(predb, yb):
-    return (predb.argmax(dim=1) == yb.cuda()).float().mean()
+    return (predb.argmax(dim=1) == to_cuda(yb)).float().mean()
 
 def dice_metric(predb, yb, smooth = 1e-5):
     probs = F.softmax(predb, dim=1)
@@ -191,8 +195,8 @@ def main ():
     #predict on the next train batch (is this fair?)
     xb, yb = next(iter(train_data))
     with torch.no_grad():
-        predb = unet(xb.cuda())
-    
+        predb = unet(to_cuda(xb))
+        
     # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
     baseline_accuracy = 0.93
