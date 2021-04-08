@@ -113,13 +113,14 @@ def main ():
     learn_rate = 0.01
 
     #sets the matplotlib display backend (most likely not needed)
-    mp.use('TkAgg', force=True)
+    #mp.use('TkAgg', force=True)
 
     #load the training data
-    base_path = Path('/home/gkiss/Data/CAMUS_resized')
-    data = DatasetLoader(base_path/'train_gray', 
-                        base_path/'train_gt')
-    print(len(data))
+    base_path = Path('/work/datasets/medical_project') # Base path for TDT4265 clusters
+    dataset = "CAMUS_resized" # CAMUS_resized (OR) TEE
+    data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
+                         Path.joinpath(base_path, dataset, 'train_gt'))
+    print(f"Length data: {len(data)}")
 
     #split the training dataset and initialize the data loaders
     train_dataset, valid_dataset = torch.utils.data.random_split(data, (300, 150))
