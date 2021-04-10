@@ -34,7 +34,7 @@ def prepare_image_data_gt(directory_train, patient, type):
     return image_data, image_gt
 
 
-def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray'):
+def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray', resize_dim=384):
     """
     Function used to convert from medimage formato to a tif format used for the training, before there will be a padding
     in order to have a square image
@@ -48,14 +48,16 @@ def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray'
     # Converting image into PIL image
     PIL_image = Image.fromarray(np.uint8(image.imdata.squeeze())).convert('RGB')
     # Max dimension
-    max_dimension = min(PIL_image.size)
+    max_dimension = max(PIL_image.size)
 
-    # Resize with padding
-    #delta_w = max_dimension - PIL_image.size[1]
-    #delta_h = max_dimension - PIL_image.size[0]
-    #padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
-    #new_im = ImageOps.expand(PIL_image, padding)
-    #PIL_image = PIL_image.resize((max_dimension, max_dimension))
+    # Padding
+    delta_w = max_dimension - PIL_image.size[0]
+    delta_h = max_dimension - PIL_image.size[1]
+    padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+    PIL_image = ImageOps.expand(PIL_image, padding)
+
+    # Resize
+    PIL_image = PIL_image.resize((resize_dim, resize_dim))
 
     if type == 'gray':
         type_path = 'train_gray'
@@ -115,7 +117,7 @@ def main():
             image_hdf5 = h5py.File(path_hdf5, 'r')
 
     # You could generate 15 gb of images
-    raise Exception('DO NOT RUN THE CODE cause resize function not implemented yet')
+    #raise Exception('DO NOT RUN THE CODE cause resize function not implemented yet')
 
     # Loop through all the patients (EXTRACTION OF THE TTE)
     for patient in os.listdir(directory_tte):
