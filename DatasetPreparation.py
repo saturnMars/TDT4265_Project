@@ -37,17 +37,18 @@ def prepare_image_data_gt(directory_train, patient, type):
 def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray', resize_dim=384):
     """
     Function used to convert from medimage formato to a tif format used for the training, before there will be a padding
-    in order to have a square image
+    in order to have a square image and a resize
     :param image: medimage format
     :param main_directory: Directory where to save the image
     :param patient: patient string
     :param image_type: choose the image_type (['2CH_ED', '2CH_ES','4CH_ED','4CH_ES'])
     :param type: string can be 'gray' or 'gt'
+    :param resize_dim: int Decide the dimension of the final image. (384 default for the model)
     :return: Nothing
     """
     # Converting image into PIL image
     PIL_image = Image.fromarray(np.uint8(image.imdata.squeeze())).convert('RGB')
-    # Max dimension
+    # Padding follows the bigger dimension
     max_dimension = max(PIL_image.size)
 
     # Padding
@@ -101,10 +102,13 @@ def main():
     # Directory where there is the TRAINING CAMUS DATASET / TEE
     directory_tte = Path('training')
     directory_tee = Path('data/TEE')
+    # Type of image for tte
+    type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
+
     # Directory where i would like to store the images extracted from the CAMUS
     saving_directory = Path('extracted_CAMUS')
 
-    flag_equal_pixel = True
+    flag_equal_pixel = False # Leave it as FALSE cause wrong function
     # Remove all the Warning after developing
     warnings.filterwarnings("ignore")
 
@@ -122,32 +126,18 @@ def main():
     # Loop through all the patients (EXTRACTION OF THE TTE)
     for patient in os.listdir(directory_tte):
 
-        # Paths regarding the data of the US images -> 2CH_ED
-        image_data_2CH_ED, image_gt_2CH_ED = prepare_image_data_gt(directory_tte, patient, '2CH_ED')
-        # Paths regarding the data of the US images -> 2CH_ES
-        image_data_2CH_ES, image_gt_2CH_ES = prepare_image_data_gt(directory_tte, patient, '2CH_ES')
-        # Paths regarding the data of the US images -> 4CH_ED
-        image_data_4CH_ED, image_gt_4CH_ED = prepare_image_data_gt(directory_tte, patient, '4CH_ED')
-        # Paths regarding the data of the US images -> 4CH_ES
-        image_data_4CH_ES, image_gt_4CH_ES = prepare_image_data_gt(directory_tte, patient, '4CH_ES')
+        # Looping through ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
+        for current_tte in type_tte:
+            # Preparing images
+            image_data, image_gt = prepare_image_data_gt(directory_tte, patient, current_tte)
 
-        if flag_equal_pixel:
-            image_data_2CH_ED, image_gt_2CH_ED = equal_pixel(image_data_2CH_ED, image_gt_2CH_ED, pixel_spacing=None)
-            image_data_2CH_ES, image_gt_2CH_ES = equal_pixel(image_data_2CH_ES, image_gt_2CH_ES, pixel_spacing=None)
-            image_data_4CH_ED, image_gt_4CH_ED = equal_pixel(image_data_4CH_ED, image_gt_4CH_ED, pixel_spacing=None)
-            image_data_4CH_ES, image_gt_4CH_ES = equal_pixel(image_data_4CH_ES, image_gt_4CH_ES, pixel_spacing=None)
+            if flag_equal_pixel:
+                image_data, image_gt = equal_pixel(image_data, image_gt, pixel_spacing=None)
 
-        # Saving Images (GRAY DATA)
-        save_medimage_to_PIL(image_data_2CH_ED, saving_directory, patient, '2CH_ED', type='gray')
-        save_medimage_to_PIL(image_data_2CH_ES, saving_directory, patient, '2CH_ES', type='gray')
-        save_medimage_to_PIL(image_data_4CH_ED, saving_directory, patient, '4CH_ED', type='gray')
-        save_medimage_to_PIL(image_data_4CH_ES, saving_directory, patient, '4CH_ES', type='gray')
-
-        # Saving Images (GROUND TRUTH DATA)
-        save_medimage_to_PIL(image_gt_2CH_ED, saving_directory, patient, '2CH_ED', type='gt')
-        save_medimage_to_PIL(image_gt_2CH_ES, saving_directory, patient, '2CH_ES', type='gt')
-        save_medimage_to_PIL(image_gt_4CH_ED, saving_directory, patient, '4CH_ED', type='gt')
-        save_medimage_to_PIL(image_gt_4CH_ES, saving_directory, patient, '4CH_ES', type='gt')
+            # Saving Images (GRAY DATA)
+            save_medimage_to_PIL(image_data, saving_directory, patient, current_tte, type='gray')
+            # Saving Images (GROUND TRUTH DATA)
+            save_medimage_to_PIL(image_gt, saving_directory, patient, current_tte, type='gt')
 
 if __name__ == "__main__":
     main()
