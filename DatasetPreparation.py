@@ -103,6 +103,7 @@ def main():
     # Directory where there is the TRAINING CAMUS DATASET / TEE
     directory_tte = Path('training')
     directory_tee = Path('data/TEE')
+    resize_dim = 384
     # Type of image for tte
     type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
 
@@ -142,6 +143,9 @@ def main():
             padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
             PIL_image = ImageOps.expand(PIL_image, padding)
 
+            # Resize
+            PIL_image = PIL_image.resize((resize_dim, resize_dim))
+
             # Saving image (gray image)
             saving_path = os.path.join(saving_directory_tee, 'train_gray', 'gray_' + current_hdf5[:-3] + '_' + str(idx) + '.tif')
             PIL_image.save(saving_path)
@@ -159,9 +163,9 @@ def main():
                 image_data, image_gt = equal_pixel(image_data, image_gt, pixel_spacing=None)
 
             # Saving Images (GRAY DATA)
-            save_medimage_to_PIL(image_data, saving_directory_tte, patient, current_tte, type='gray')
+            save_medimage_to_PIL(image_data, saving_directory_tte, patient, current_tte, type='gray', resize_dim=resize_dim)
             # Saving Images (GROUND TRUTH DATA)
-            save_medimage_to_PIL(image_gt, saving_directory_tte, patient, current_tte, type='gt')
+            save_medimage_to_PIL(image_gt, saving_directory_tte, patient, current_tte, type='gt', resize_dim=resize_dim)
 
 if __name__ == "__main__":
     main()
