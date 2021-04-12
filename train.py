@@ -17,7 +17,6 @@ from Unet2D import Unet2D
 
 def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     start = time.time()
-    #model.cuda()
     to_cuda(model)
 
     train_loss, valid_loss = [], []
@@ -25,7 +24,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     best_acc = 0.0
 
     for epoch in range(epochs):
-        print('Epoch {}/{}'.format(epoch, epochs - 1))
+        print('Epoch {}/{}'.format(epoch + 1, epochs))
         print('-' * 10)
 
         for phase in ['train', 'valid']:
@@ -43,8 +42,6 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 
             # iterate over data
             for x, y in dataloader:
-                #x = x.cuda()
-                #y = y.cuda()
                 y = to_cuda(y)
                 x = to_cuda(x)
                 step += 1
@@ -81,7 +78,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
             epoch_loss = running_loss / len(dataloader.dataset)
             epoch_acc = running_acc / len(dataloader.dataset)
 
-            print('Epoch {}/{}'.format(epoch, epochs - 1))
+            print('Epoch {}/{}'.format(epoch +1, epochs))
             print('-' * 10)
             print('{} Loss: {:.4f} Acc: {}'.format(phase, epoch_loss, epoch_acc))
             print('-' * 10)
@@ -98,7 +95,7 @@ def acc_metric(predb, yb):
 
 def dice_metric(predb, yb, smooth = 1e-5):
     probs = F.softmax(predb, dim=1)
-    
+    print("DICE metrics", probs.shape, yb.shape)
     batch_size = probs.shape[0]
     num_classes = probs.shape[1]
     
@@ -150,22 +147,21 @@ def main ():
     #mp.use('TkAgg', force=True)
 
     #load the training data
-    base_path = Path('Data')
-    dataset = "extracted_CAMUS"
     #base_path = Path('/work/datasets/medical_project')
     #dataset = "CAMUS_resized"
+    base_path = Path('Data') 
+    dataset = "extracted_CAMUS" 
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'))
-    print(f"Number of items loaded: {len(data)}")
     
     #split the training dataset and initialize the data loaders
-    train_size = int(0.8 * len(data))
-    test_size = int(0.2 * len(data))
+    train_size = int(0.7 * len(data))
+    test_size = int(0.3 * len(data))
     
     train_dataset, valid_dataset = torch.utils.data.random_split(data, (train_size, test_size))
     train_data = DataLoader(train_dataset, batch_size=bs, shuffle=True)
     valid_data = DataLoader(valid_dataset, batch_size=bs, shuffle=True)
-    print(f"Item for training: {len(train_dataset)}, Item for validation: {len(valid_dataset)}")
+    print(f"\nItems loaded: {len(data)} [training: {len(train_dataset)}, valid: {len(valid_dataset)}]")
     
     if visual_debug:
         idk_image = 150
@@ -176,12 +172,12 @@ def main ():
         print(data.open_as_array(idk_image).shape)
 
     xb, yb = next(iter(train_data))
-    print(xb.shape, yb.shape)
+    print(f"RAW IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
 
     # Build the Unet2D with one channel as input and 2 channels as output 
     # Outputs: Probabilities for each class for each pixel in different layer)
     # CAMPUS_resized has 2 classes (background and the item found in the image)
-    unet = Unet2D(1,2)
+    unet = Unet2D(1, out_channels=4)
 
     #loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
@@ -205,11 +201,10 @@ def main ():
         
     # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
-    baseline_accuracy = 0.93
-    print(f"Final Accuracy: {round(accuracy, 10)} (delta baseline {round(accuracy - baseline_accuracy, 4)})")
+    baseline_accuracy = accuracy
+    print(f"\nFinal Accuracy: {round(accuracy, 10)} (delta baseline {round(accuracy - baseline_accuracy, 4)})")
     
     # Evaluation - Dice score
-    # TODO --> it could be wrongly (always 1) 
     class_dice, average_dice = dice_metric(predb, yb)
     baseline_dice = average_dice
     print(f"Final Dice score: {round(average_dice, 10)} {class_dice} (delta baseline {round(average_dice - baseline_dice, 4)})")
