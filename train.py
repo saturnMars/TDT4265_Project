@@ -150,22 +150,30 @@ def main ():
     #mp.use('TkAgg', force=True)
 
     #load the training data
-    base_path = Path('/work/datasets/medical_project') # Base path for TDT4265 clusters
-    dataset = "CAMUS_resized" # CAMUS_resized (OR) TEE
+    #base_path = Path('Data')
+    #dataset = "extracted_CAMUS" 
+    base_path = Path('/work/datasets/medical_project')
+    dataset = "CAMUS_resized" 
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'))
     print(f"Number of items loaded: {len(data)}")
-
+    
     #split the training dataset and initialize the data loaders
-    train_dataset, valid_dataset = torch.utils.data.random_split(data, (300, 150))
+    train_size = int(0.8 * len(data))
+    test_size = int(0.2 * len(data))
+    
+    train_dataset, valid_dataset = torch.utils.data.random_split(data, (train_size, test_size))
     train_data = DataLoader(train_dataset, batch_size=bs, shuffle=True)
     valid_data = DataLoader(valid_dataset, batch_size=bs, shuffle=True)
-
+    print(f"Item for training: {len(train_dataset)}, Item for validation: {len(valid_dataset)}")
+    
     if visual_debug:
+        idk_image = 150
         fig, ax = plt.subplots(1,2)
-        ax[0].imshow(data.open_as_array(150))
-        ax[1].imshow(data.open_mask(150))
+        ax[0].imshow(data.open_as_array(idk_image))
+        ax[1].imshow(data.open_mask(idk_image))
         plt.show()
+        print(data.open_as_array(idk_image).shape)
 
     xb, yb = next(iter(train_data))
     print(xb.shape, yb.shape)

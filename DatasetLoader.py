@@ -28,7 +28,7 @@ class DatasetLoader(Dataset):
     def open_as_array(self, idx, invert=False):
         #open ultrasound data
         raw_us = np.stack([np.array(Image.open(self.files[idx]['gray'])),
-                           ], axis=2)
+        ], axis=2)
     
         if invert:
             raw_us = raw_us.transpose((2,0,1))
