@@ -135,7 +135,7 @@ def predb_to_mask(predb, idx):
 
 def main ():
     #enable if you want to see some plotting
-    visual_debug = True
+    visual_debug = False
 
     #batch size
     bs = 12
@@ -150,10 +150,10 @@ def main ():
     #mp.use('TkAgg', force=True)
 
     #load the training data
-    #base_path = Path('Data')
-    #dataset = "extracted_CAMUS" 
-    base_path = Path('/work/datasets/medical_project')
-    dataset = "CAMUS_resized" 
+    base_path = Path('Data')
+    dataset = "extracted_CAMUS"
+    #base_path = Path('/work/datasets/medical_project')
+    #dataset = "CAMUS_resized"
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'))
     print(f"Number of items loaded: {len(data)}")
