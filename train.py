@@ -98,34 +98,32 @@ def acc_metric(predb, yb):
 
 def dice_metric(predb, yb, smooth = 1e-5):
     probs = F.softmax(predb, dim=1)
-    probs = probs.argmax(dim=1)
-    #print(probs.shape, yb.shape)
     
-    batch_size = probs.size(0)
+    batch_size = probs.shape[0]
+    num_classes = probs.shape[1]
     
-    # Flatten
-    pred = probs.view(batch_size, -1)
-    target = yb.cuda().view(batch_size, -1)
-    #print(pred.shape, target.shape)
-    
-    # There are two different computationa formulas
-    formula = "v1" 
-    
-    # v1 --> dice = (2 * (pred ∩ gt)) / (pred ∪ gt)
-    if formula == "v1":
+    dice_scores = []
+    for class_idk in range(num_classes):
+        # Flatten
+        pred = probs[:, class_idk, :, :].view(batch_size, -1)
+        target = yb.cuda().view(batch_size, -1)
+
         intersection = (pred * target).sum(1)
         union = pred.sum(1) + target.sum(1)
-        dice = (2 * intersection + smooth) / (union + smooth)
-    # v2 --> dice = (2 * tp) / (2 * tp + fp + fn)
-    elif formula == "v2": 
-        tp = torch.sum(target * pred, dim = 1)
-        fp = torch.sum(pred, dim = 1) - tp
-        fn = torch.sum(target, dim = 1) - tp
-        dice = (2*tp + smooth) / (2*tp + fp + fn + smooth)  
-    
-    # Take the average value for each image
-    average_dice = dice.sum() / batch_size
-    return 1 - average_dice
+        dice = 1 - ((2 * intersection + smooth) / (union + smooth))
+
+        #tp = torch.sum(target * pred, dim = 1)
+        #fp = torch.sum(pred, dim = 1) - tp
+        #fn = torch.sum(target, dim = 1) - tp
+        #dice = 1 - ((2*tp + smooth) / (2*tp + fp + fn + smooth))
+            
+        # Compute the average value for the batch
+        class_dice =  torch.sum(dice)/batch_size
+        dice_scores.append(round(class_dice.item(), 4))
+        
+    # Compute the average score among all classes
+    average_dice = sum(dice_scores)/num_classes
+    return dice_scores, average_dice
     
 def batch_to_img(xb, idx):
     img = np.array(xb[idx,0:3])
@@ -143,7 +141,7 @@ def main ():
     bs = 12
 
     #epochs
-    epochs_val =  5# 50
+    epochs_val =  1 #50
 
     #learning rate
     learn_rate = 0.01
@@ -204,10 +202,10 @@ def main ():
     
     # Evaluation - Dice score
     # TODO --> it could be wrongly (always 1) 
-    dice_score = dice_metric(predb, yb).item()
-    baseline_dice = dice_score
-    print(f"Final Dice score: {round(dice_score, 10)} (delta baseline {round(dice_score - baseline_dice, 4)})")
-
+    class_dice, average_dice = dice_metric(predb, yb)
+    baseline_dice = average_dice
+    print(f"Final Dice score: {round(average_dice, 10)} {class_dice} (delta baseline {round(average_dice - baseline_dice, 4)})")
+    
     #show the predicted segmentations
     if visual_debug:
         fig, ax = plt.subplots(bs,3, figsize=(15,bs*5))
