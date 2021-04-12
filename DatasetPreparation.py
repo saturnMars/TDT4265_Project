@@ -48,7 +48,7 @@ def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray'
     :return: Nothing
     """
     # Converting image into PIL image
-    PIL_image = Image.fromarray(np.uint8(image.imdata.squeeze())).convert('RGB')
+    PIL_image = Image.fromarray(np.uint8(image.imdata.squeeze())).convert('L')
     # Padding follows the bigger dimension
     max_dimension = max(PIL_image.size)
 
@@ -71,7 +71,7 @@ def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray'
         raise Exception('Unknown data type')
 
     saving_path = os.path.join(main_directory, type_path, type + '_' + patient + '_' + image_type + '.tif')
-    PIL_image.save(saving_path)
+    PIL_image.save(saving_path, )
     return
 
 
@@ -108,8 +108,8 @@ def main():
     type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
 
     # Directory where i would like to store the images extracted from the CAMUS
-    saving_directory_tte = Path('extracted_CAMUS')
-    saving_directory_tee = Path('extracted_TEE')
+    saving_directory_tte = Path('data\extracted_CAMUS')
+    saving_directory_tee = Path('data\extracted_TEE')
 
     flag_equal_pixel = False # Leave it as FALSE cause wrong function
     # Remove all the Warning after developing
@@ -133,7 +133,7 @@ def main():
             # for idx in range(tissue_hdf5['data'].shape[2]):
             idx = 0
             # TEE image
-            PIL_image = Image.fromarray(np.uint8(tissue_data[:, :, idx].squeeze())).convert('RGB')
+            PIL_image = Image.fromarray(np.uint8(tissue_data[:, :, idx].squeeze())).convert('L')
             # Padding follows the bigger dimension
             max_dimension = max(PIL_image.size)
 
