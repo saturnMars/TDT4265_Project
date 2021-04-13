@@ -131,9 +131,6 @@ def predb_to_mask(predb, idx):
     return p.argmax(0).cpu()
 
 def main ():
-    #enable if you want to see some plotting
-    visual_debug = False
-
     #batch size
     bs = 12
 
@@ -145,16 +142,17 @@ def main ():
 
     #sets the matplotlib display backend (most likely not needed)
     #mp.use('TkAgg', force=True)
+    
+    #enable if you want to see some plotting
+    visual_debug = True
 
-    #load the training data
-    #base_path = Path('/work/datasets/medical_project')
-    #dataset = "CAMUS_resized"
-    base_path = Path('Data') 
-    dataset = "extracted_CAMUS" 
+    # Load the data (raw and gt images)
+    base_path = Path('Data') # /work/datasets/medical_project
+    dataset = "extracted_CAMUS" #CAMUS_resized
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'))
     
-    #split the training dataset and initialize the data loaders
+    # Split the training, test and validation datasets and initialize the data loaders
     train_size = int(0.8 * len(data))
     test_size = int(0.1 * len(data))
     val_size = int(0.1 * len(data))
@@ -165,30 +163,27 @@ def main ():
     valid_data = DataLoader(valid_dataset, batch_size=bs, shuffle=True)
     print(f"\nItems loaded: {len(data)} [training: {len(train_dataset)}, test: {len(test_dataset)}, valid: {len(valid_dataset)}]")
     
+    # Visualize shape of raw and ground true images
+    xb, yb = next(iter(train_data))
+    print(f"RAW IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
+    
     if visual_debug:
         idk_image = 150
         fig, ax = plt.subplots(1,2)
         ax[0].imshow(data.open_as_array(idk_image))
         ax[1].imshow(data.open_mask(idk_image))
         plt.show()
-        print(data.open_as_array(idk_image).shape)
 
-    xb, yb = next(iter(train_data))
-    print(f"RAW IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
-
-    # Build the Unet2D with one channel as input and 2 channels as output 
+    # MODEL: Unet2D (one input channel, 4 output channels)
     # Outputs: Probabilities for each class for each pixel in different layer)
-    # CAMPUS_resized has 2 classes (background and the item found in the image)
     unet = Unet2D(1, out_channels=4)
-
-    #loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
     opt = torch.optim.Adam(unet.parameters(), lr=learn_rate)
 
-    #do some training
+    # Training process
     train_loss, test_loss = train(unet, train_data, test_data, loss_fn, opt, acc_metric, epochs=epochs_val)
 
-    #plot training and validation losses
+    # Plot training and test losses
     if visual_debug:
         plt.figure(figsize=(10,8))
         plt.plot(train_loss, label='Train loss')
@@ -197,28 +192,27 @@ def main ():
         plt.show()
 
     # Predict on the validation data
-    xb, yb = next(iter(valid_data))
+    xb, yb = next(iter(validation_data))
     with torch.no_grad():
-        predb = unet(to_cuda(xb))
+        predb = model(to_cuda(xb))
         
     # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
     baseline_accuracy = accuracy
-    print(f"\nFinal Accuracy: {round(accuracy, 10)} (delta baseline {round(accuracy - baseline_accuracy, 4)})")
+    print(f"\nFinal Accuracy: {round(accuracy, 10)} (delta to baseline {round(accuracy - baseline_accuracy, 4)})")
     
     # Evaluation - Dice score
     class_dice, average_dice = dice_metric(predb, yb)
     baseline_dice = average_dice
-    print(f"Final Dice score: {round(average_dice, 10)} {class_dice} (delta baseline {round(average_dice - baseline_dice, 4)})")
+    print(f"Final average DICE score: {round(average_dice, 10)} {class_dice} (delta to baseline {round(average_dice - baseline_dice, 4)})")
     
-    #show the predicted segmentations
+    # show the predicted segmentations
     if visual_debug:
         fig, ax = plt.subplots(bs,3, figsize=(15,bs*5))
         for i in range(bs):
             ax[i,0].imshow(batch_to_img(xb,i))
             ax[i,1].imshow(yb[i])
             ax[i,2].imshow(predb_to_mask(predb, i))
-
         plt.show()
 
 if __name__ == "__main__":
