@@ -15,7 +15,6 @@ from DatasetLoader import DatasetLoader
 from Unet2D import Unet2D
 from PIL import Image
 
-
 def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     start = time.time()
     to_cuda(model)
@@ -25,7 +24,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     best_acc = 0.0
 
     for epoch in range(epochs):
-        print('Epoch {}/{}'.format(epoch + 1, epochs))
+        print(f'Epoch {epoch + 1}/{epochs}')
         print('-' * 10)
 
         for phase in ['train', 'valid']:
@@ -73,13 +72,13 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 
                 if step % 100 == 0:
                     # clear_output(wait=True)
-                    print('Current step: {}  Loss: {}  Acc: {}  AllocMem (Mb): {}'.format(step, loss, acc, torch.cuda.memory_allocated()/1024/1024))
+                    print(f'Current step: {step}  Loss: {loss}  Acc: {acc}  AllocMem (Mb): {torch.cuda.memory_allocated()/1024/1024}")
                     # print(torch.cuda.memory_summary())
 
             epoch_loss = running_loss / len(dataloader.dataset)
             epoch_acc = running_acc / len(dataloader.dataset)
 
-            print('Epoch {}/{}'.format(epoch +1, epochs))
+            print(f'Epoch {epoch+1}/{epochs}')
             print('-' * 10)
             print('{} Loss: {:.4f} Acc: {}'.format(phase, epoch_loss, epoch_acc))
             print('-' * 10)
@@ -120,7 +119,7 @@ def dice_metric(predb, yb, smooth = 1e-5):
         
     # Compute the average score among all classes
     average_dice = sum(dice_scores)/num_classes
-    return dice_scores, average_dice
+    return average_dice, dice_scores
     
 def batch_to_img(xb, idx):
     img = np.array(xb[idx,0:3])
@@ -132,10 +131,10 @@ def predb_to_mask(predb, idx):
 
 def main ():
     #batch size
-    bs = 12
+    bs = 8 #12
 
     #epochs
-    epochs_val =  1#50
+    epochs_val =  50
 
     #learning rate
     learn_rate = 0.01
@@ -198,13 +197,13 @@ def main ():
         
     # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
-    baseline_accuracy = accuracy
-    print(f"\nFinal Accuracy: {round(accuracy, 10)} (delta to baseline {round(accuracy - baseline_accuracy, 4)})")
+    baseline_accuracy = 0.9705810547 # TRAINING TIME: 102m 6s
+    print(f"\nFinal Accuracy: {round(accuracy, 4)} (delta to baseline {round(accuracy - baseline_accuracy, 4)})")
     
     # Evaluation - Dice score
-    class_dice, average_dice = dice_metric(predb, yb)
-    baseline_dice = average_dice
-    print(f"Final average DICE score: {round(average_dice, 10)} {class_dice} (delta to baseline {round(average_dice - baseline_dice, 4)})")
+    average_dice, class_dice = dice_metric(predb, yb)
+    baseline_dice =  0.607425 # [0.9652, 0.5956, 0.3764, 0.4925]
+    print(f"Final average DICE score: {round(average_dice, 4)} {class_dice} (delta to baseline {round(average_dice - baseline_dice, 4)})")
     
     # show the predicted segmentations
     if visual_debug:
