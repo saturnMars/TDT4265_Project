@@ -40,7 +40,7 @@ class DatasetLoader(Dataset):
     def open_mask(self, idx, add_dims=False):
         #open mask file
         raw_mask = np.array(Image.open(self.files[idx]['gt']))
-        raw_mask = np.where(raw_mask>100, 1, 0)
+        #raw_mask = np.where(raw_mask>100, 1, 0)
         
         return np.expand_dims(raw_mask, 0) if add_dims else raw_mask
     

@@ -13,6 +13,7 @@ import torch.nn.functional as F
 
 from DatasetLoader import DatasetLoader
 from Unet2D import Unet2D
+from PIL import Image
 
 
 def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
@@ -95,7 +96,6 @@ def acc_metric(predb, yb):
 
 def dice_metric(predb, yb, smooth = 1e-5):
     probs = F.softmax(predb, dim=1)
-    print("DICE metrics", probs.shape, yb.shape)
     batch_size = probs.shape[0]
     num_classes = probs.shape[1]
     
@@ -138,7 +138,7 @@ def main ():
     bs = 12
 
     #epochs
-    epochs_val =  1 #50
+    epochs_val =  1#50
 
     #learning rate
     learn_rate = 0.01
@@ -155,13 +155,15 @@ def main ():
                          Path.joinpath(base_path, dataset, 'train_gt'))
     
     #split the training dataset and initialize the data loaders
-    train_size = int(0.7 * len(data))
-    test_size = int(0.3 * len(data))
+    train_size = int(0.8 * len(data))
+    test_size = int(0.1 * len(data))
+    val_size = int(0.1 * len(data))
     
-    train_dataset, valid_dataset = torch.utils.data.random_split(data, (train_size, test_size))
+    train_dataset, test_dataset, valid_dataset = torch.utils.data.random_split(data, (train_size, test_size, val_size))
     train_data = DataLoader(train_dataset, batch_size=bs, shuffle=True)
+    test_data = DataLoader(test_dataset, batch_size=bs, shuffle=True)
     valid_data = DataLoader(valid_dataset, batch_size=bs, shuffle=True)
-    print(f"\nItems loaded: {len(data)} [training: {len(train_dataset)}, valid: {len(valid_dataset)}]")
+    print(f"\nItems loaded: {len(data)} [training: {len(train_dataset)}, test: {len(test_dataset)}, valid: {len(valid_dataset)}]")
     
     if visual_debug:
         idk_image = 150
@@ -184,18 +186,18 @@ def main ():
     opt = torch.optim.Adam(unet.parameters(), lr=learn_rate)
 
     #do some training
-    train_loss, valid_loss = train(unet, train_data, valid_data, loss_fn, opt, acc_metric, epochs=epochs_val)
+    train_loss, test_loss = train(unet, train_data, test_data, loss_fn, opt, acc_metric, epochs=epochs_val)
 
     #plot training and validation losses
     if visual_debug:
         plt.figure(figsize=(10,8))
         plt.plot(train_loss, label='Train loss')
-        plt.plot(valid_loss, label='Valid loss')
+        plt.plot(test_loss, label='Test loss')
         plt.legend()
         plt.show()
 
-    #predict on the next train batch (is this fair?)
-    xb, yb = next(iter(train_data))
+    # Predict on the validation data
+    xb, yb = next(iter(valid_data))
     with torch.no_grad():
         predb = unet(to_cuda(xb))
         
