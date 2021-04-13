@@ -192,9 +192,9 @@ def main ():
         plt.show()
 
     # Predict on the validation data
-    xb, yb = next(iter(validation_data))
+    xb, yb = next(iter(valid_data))
     with torch.no_grad():
-        predb = model(to_cuda(xb))
+        predb = unet(to_cuda(xb))
         
     # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
