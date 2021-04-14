@@ -150,25 +150,25 @@ def main():
             # find the peaks - for the ED event
             max_point = np.max(ecg_data_arr)
             peaks, _ = find_peaks(ecg_data_arr, height=max_point/2, distance=heartbeat_n_samples/2)
+            #min, _ = find_peaks(-ecg_data_arr, distance=heartbeat_n_samples / 2)
             # Plotting the ecg
-            #plt.plot(ecg_data_arr)
-            #plt.plot(peaks, ecg_data_arr[peaks], "x")
-            #plt.show()
+            plt.plot(ecg_data_arr)
+            plt.plot(peaks, ecg_data_arr[peaks], "x")
+            #plt.plot(min, ecg_data_arr[min], "o")
+
+            # Define manually the ES points
+            if len(peaks)-1 > 0:
+                min = plt.ginput(n=len(peaks)-1, show_clicks=True)
+            plt.show()
 
             for peak_pos in peaks:
                 idx = int(np.round(tissue_data.shape[2]*peak_pos/len(index_list)))
-                print(idx)
+
                 # TEE image - ED event
                 PIL_image_ED = Image.fromarray(np.uint8(tissue_data[:, :, idx].squeeze())).convert('L')
 
                 # Padding follows the bigger dimension
                 max_dimension = max(PIL_image_ED.size)
-
-                # Padding
-                #delta_w = max_dimension - PIL_image.size[0]
-                #delta_h = max_dimension - PIL_image.size[1]
-                #padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
-                #PIL_image = ImageOps.expand(PIL_image, padding)
 
                 # Make the image isotropic
                 PIL_image_ED = PIL_image_ED.resize((max_dimension, max_dimension))
@@ -179,6 +179,26 @@ def main():
                 # Saving image (gray image)
                 saving_path_ED = os.path.join(saving_directory_tee, 'train_gray', 'gray_' + current_hdf5[:-3] + '_' + str(idx) + 'ED.tif')
                 PIL_image_ED.save(saving_path_ED)
+
+            # Extract ES IMAGES
+            for es_pos in min:
+                idx = int(np.round(tissue_data.shape[2]*es_pos[0]/len(index_list)))
+
+                # TEE image - ES event
+                PIL_image_ES = Image.fromarray(np.uint8(tissue_data[:, :, idx].squeeze())).convert('L')
+
+                # Padding follows the bigger dimension
+                max_dimension = max(PIL_image_ES.size)
+
+                # Make the image isotropic
+                PIL_image_ES = PIL_image_ES.resize((max_dimension, max_dimension))
+
+                # Resize
+                PIL_image_ES = PIL_image_ES.resize((resize_dim, resize_dim))
+
+                # Saving image (gray image)
+                saving_path_ES = os.path.join(saving_directory_tee, 'train_gray', 'gray_' + current_hdf5[:-3] + '_' + str(idx) + 'ES.tif')
+                PIL_image_ES.save(saving_path_ES)
 
 
     # ################## Loop through all the patients (EXTRACTION OF THE TTE) ##################
