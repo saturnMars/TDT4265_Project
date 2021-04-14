@@ -72,7 +72,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 
                 if step % 100 == 0:
                     # clear_output(wait=True)
-                    print(f'Current step: {step}  Loss: {loss}  Acc: {acc}  AllocMem (Mb): {torch.cuda.memory_allocated()/1024/1024}")
+                    print(f'Current step: {step}  Loss: {loss}  Acc: {acc}  AllocMem (Mb): {torch.cuda.memory_allocated()/1024/1024}')
                     # print(torch.cuda.memory_summary())
 
             epoch_loss = running_loss / len(dataloader.dataset)
@@ -134,7 +134,7 @@ def main ():
     bs = 8 #12
 
     #epochs
-    epochs_val =  50
+    epochs_val =  1#50
 
     #learning rate
     learn_rate = 0.01
