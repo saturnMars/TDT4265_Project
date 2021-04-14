@@ -10,6 +10,7 @@ import os
 import h5py
 import warnings
 from pathlib import Path
+from scipy.signal import find_peaks
 
 
 # todo: We can add function to extract also the TEE images from the hdf5 format
@@ -53,10 +54,13 @@ def save_medimage_to_PIL(image, main_directory, patient, image_type, type='gray'
     max_dimension = max(PIL_image.size)
 
     # Padding
-    delta_w = max_dimension - PIL_image.size[0]
-    delta_h = max_dimension - PIL_image.size[1]
-    padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
-    PIL_image = ImageOps.expand(PIL_image, padding)
+    #delta_w = max_dimension - PIL_image.size[0]
+    #delta_h = max_dimension - PIL_image.size[1]
+    #padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+    #PIL_image = ImageOps.expand(PIL_image, padding)
+
+    # This line one of code it will make isotropic
+    PIL_image = PIL_image.resize((max_dimension, max_dimension))
 
     # Resize
     PIL_image = PIL_image.resize((resize_dim, resize_dim))
@@ -84,7 +88,7 @@ def equal_pixel(image_data, image_gt, pixel_spacing=None):
     :return: prepro_image_data: Resampled image with the new pixel_spacing
     :return: prepro_image_gt: Resampled ground truth image with the new pixel_spacing
     """
-    # Pixel spacing
+    # Pixel spacing - this should be the distance between pixels
     element_spacing = image_data.spacing()
 
     if not pixel_spacing:
@@ -104,6 +108,8 @@ def main():
     directory_tte = Path('training')
     directory_tee = Path('data/TEE')
     resize_dim = 384
+    # Hearbeat duration according to the literature
+    heartbeat_duration = 0.8    # [sec]
     # Type of image for tte
     type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
 
@@ -129,26 +135,50 @@ def main():
             # Extract the ECG
             ecg_hdf5 = image_hdf5['ecg']
             ecg_data = ecg_hdf5['ecg_data']
-            # too many
-            # for idx in range(tissue_hdf5['data'].shape[2]):
-            idx = 0
-            # TEE image
-            PIL_image = Image.fromarray(np.uint8(tissue_data[:, :, idx].squeeze())).convert('L')
-            # Padding follows the bigger dimension
-            max_dimension = max(PIL_image.size)
+            ecg_times = ecg_hdf5['ecg_times']
 
-            # Padding
-            delta_w = max_dimension - PIL_image.size[0]
-            delta_h = max_dimension - PIL_image.size[1]
-            padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
-            PIL_image = ImageOps.expand(PIL_image, padding)
+            index_list = [i for i in range(ecg_data.shape[0])]
+            print('Lenght of the ecg signal: ' + str(len(index_list)))
+            print('Number of image : ' + str(tissue_data.shape[2]))
+            ecg_data_arr = ecg_data.__getitem__(index_list)
+            ecg_times_arr = ecg_times.__getitem__(index_list)
 
-            # Resize
-            PIL_image = PIL_image.resize((resize_dim, resize_dim))
+            delta_t = ecg_times_arr[1]-ecg_times_arr[0] # Sampling frequency
+            fs = np.round(1/delta_t)
+            heartbeat_n_samples = np.round(fs*heartbeat_duration)
 
-            # Saving image (gray image)
-            saving_path = os.path.join(saving_directory_tee, 'train_gray', 'gray_' + current_hdf5[:-3] + '_' + str(idx) + '.tif')
-            PIL_image.save(saving_path)
+            # find the peaks - for the ED event
+            max_point = np.max(ecg_data_arr)
+            peaks, _ = find_peaks(ecg_data_arr, height=max_point/2, distance=heartbeat_n_samples/2)
+            # Plotting the ecg
+            #plt.plot(ecg_data_arr)
+            #plt.plot(peaks, ecg_data_arr[peaks], "x")
+            #plt.show()
+
+            for peak_pos in peaks:
+                idx = int(np.round(tissue_data.shape[2]*peak_pos/len(index_list)))
+                print(idx)
+                # TEE image - ED event
+                PIL_image_ED = Image.fromarray(np.uint8(tissue_data[:, :, idx].squeeze())).convert('L')
+
+                # Padding follows the bigger dimension
+                max_dimension = max(PIL_image_ED.size)
+
+                # Padding
+                #delta_w = max_dimension - PIL_image.size[0]
+                #delta_h = max_dimension - PIL_image.size[1]
+                #padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+                #PIL_image = ImageOps.expand(PIL_image, padding)
+
+                # Make the image isotropic
+                PIL_image_ED = PIL_image_ED.resize((max_dimension, max_dimension))
+
+                # Resize
+                PIL_image_ED = PIL_image_ED.resize((resize_dim, resize_dim))
+
+                # Saving image (gray image)
+                saving_path_ED = os.path.join(saving_directory_tee, 'train_gray', 'gray_' + current_hdf5[:-3] + '_' + str(idx) + 'ED.tif')
+                PIL_image_ED.save(saving_path_ED)
 
 
     # ################## Loop through all the patients (EXTRACTION OF THE TTE) ##################
