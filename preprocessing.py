@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 
 import os
 from pathlib import Path
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 import cv2
 
-def preprocessing(image, pre_processing_steps):
+def preprocessing(image, pre_processing_steps, **kwargs):
 
     image_pre = image.copy()
+    bright = kwargs.get('brightness', 1)
     for step in pre_processing_steps:
         if step == 'GaussBlur':
             image_pre = image_pre.filter(ImageFilter.GaussianBlur)
@@ -29,6 +30,9 @@ def preprocessing(image, pre_processing_steps):
             image_pre = image_pre.filter(ImageFilter.EDGE_ENHANCE_MORE)
         elif step == 'FIND_EDGES':
             image_pre = image_pre.filter(ImageFilter.FIND_EDGES)
+        elif step == 'bright':
+            enhancer = ImageEnhance.Brightness(image_pre)
+            image_pre = enhancer.enhance(bright)
         else:
             raise Exception('Unknown preprocessing step')
 
@@ -40,19 +44,20 @@ if __name__ == "__main__":
     CAMUS_path = os.path.join(directory_main, 'extracted_CAMUS', 'train_gray')
     TEE_path = os.path.join(directory_main, 'extracted_TEE', 'train_gray')
 
-    test_image = 'gray_patient0001_4CH_ES.tif'
+    test_image = 'gray_patient0020_4CH_ES.tif'
     image = Image.open(os.path.join(CAMUS_path, test_image))
     image.show(title='original')
-
+    # Additional parameters
+    dict = {'brightness': 1.5}
     # The order is relevant here, so be careful when you put something
     pre_processing_steps = [#'GaussBlur',
                             #'MedianFilter',
-
-                            'EDGE_ENHANCE',
+                            'bright',
+                            #'EDGE_ENHANCE',
                             'MedianFilter'
                             #'Sharp'
                             #'MaxFilter'
                             ]
 
-    image_pre = preprocessing(image, pre_processing_steps)
+    image_pre = preprocessing(image, pre_processing_steps, **dict)
     image_pre.show(title='preprocessed')
