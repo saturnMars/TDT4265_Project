@@ -50,11 +50,11 @@ if __name__ == "__main__":
     # Additional parameters
     dict = {'brightness': 1.5}
     # The order is relevant here, so be careful when you put something
-    pre_processing_steps = [#'GaussBlur',
+    pre_processing_steps = ['GaussBlur'
                             #'MedianFilter',
-                            'bright',
+                            #'bright',
                             #'EDGE_ENHANCE',
-                            'MedianFilter'
+                            #'MedianFilter'
                             #'Sharp'
                             #'MaxFilter'
                             ]
