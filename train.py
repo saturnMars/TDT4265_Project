@@ -4,6 +4,8 @@ import matplotlib as mp
 from utils import *
 import matplotlib.pyplot as plt
 import time
+import argparse
+from os.path import isfile
 
 from pathlib import Path
 import torch
@@ -129,7 +131,7 @@ def predb_to_mask(predb, idx):
     p = F.softmax(predb[idx], 0)
     return p.argmax(0).cpu()
 
-def main ():
+def main(model_path, pretrained):
     #batch size
     bs = 8 #12
 
@@ -143,7 +145,7 @@ def main ():
     #mp.use('TkAgg', force=True)
     
     #enable if you want to see some plotting
-    visual_debug = True
+    visual_debug = False
 
     # Load the data (raw and gt images)
     base_path = Path('Data') # /work/datasets/medical_project
@@ -176,6 +178,9 @@ def main ():
     # MODEL: Unet2D (one input channel, 4 output channels)
     # Outputs: Probabilities for each class for each pixel in different layer)
     unet = Unet2D(1, out_channels=4)
+    if pretrained:
+        unet.load_state_dict(torch.load(model_path))
+    
     loss_fn = nn.CrossEntropyLoss()
     opt = torch.optim.Adam(unet.parameters(), lr=learn_rate)
 
@@ -213,6 +218,27 @@ def main ():
             ax[i,1].imshow(yb[i])
             ax[i,2].imshow(predb_to_mask(predb, i))
         plt.show()
+        
+    if model_path is not None:
+        torch.save(unet.state_dict(), model_path)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='train')
+
+    parser.add_argument("--model_path", help="Path of the model", default=None)
+    parser.add_argument("--pretrained", help="Path of the model", action="store_true")
+
+    args = parser.parse_args()
+    model_path = args.model_path
+    pretrained = args.pretrained
+    
+    if pretrained:
+        if model_path is None:
+            raise FileNotFoundError('You have not given any model path')
+        elif not isfile(model_path):
+            raise FileNotFoundError('The model path is not valid, or not exists.')
+    else:
+        if model_path is None:
+            print('Model is not saved')
+        
+    main(model_path, pretrained)
