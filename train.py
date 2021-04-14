@@ -223,10 +223,10 @@ def main(model_path, pretrained):
         torch.save(unet.state_dict(), model_path)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='train')
+    parser = argparse.ArgumentParser(description='train function')
 
     parser.add_argument("--model_path", help="Path of the model", default=None)
-    parser.add_argument("--pretrained", help="Path of the model", action="store_true")
+    parser.add_argument("--pretrained", help="If us an existing model", action="store_true")
 
     args = parser.parse_args()
     model_path = args.model_path
