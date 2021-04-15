@@ -42,12 +42,12 @@ class Unet2D(nn.Module):
         layers = [
             torch.nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
             torch.nn.Conv2d(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
             torch.nn.MaxPool2d(kernel_size=2, stride=2)
@@ -62,12 +62,12 @@ class Unet2D(nn.Module):
             
             torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
             torch.nn.Conv2d(out_channels, out_channels, kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
         ]
     
@@ -82,21 +82,21 @@ class Unet2D(nn.Module):
             
             torch.nn.Conv2d(in_channels, middle_channels , kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(middle_channels),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
             torch.nn.Conv2d(middle_channels, middle_channels, kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(middle_channels),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
             torch.nn.Conv2d(middle_channels, middle_channels//2, kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(middle_channels//2),
-            torch.nn.ReLU(inplace=True),
+            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
-            torch.nn.Conv2d(middle_channels//2, out_channels, 1)
-            #torch.nn.Softmax(dim=1)
+            torch.nn.Conv2d(middle_channels//2, out_channels, 1),
+            torch.nn.Softmax(dim=1)
         ]
         
         last = nn.Sequential(*layers)

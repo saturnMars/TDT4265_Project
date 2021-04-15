@@ -96,15 +96,15 @@ def acc_metric(predb, yb):
     return (predb.argmax(dim=1) == to_cuda(yb)).float().mean()
 
 def dice_metric(predb, yb, smooth = 1e-5):
-    probs = F.softmax(predb, dim=1)
-    batch_size = probs.shape[0]
-    num_classes = probs.shape[1]
+    batch_size = predb.shape[0]
+    num_classes = predb.shape[1]
     
     dice_scores = []
     for class_idk in range(num_classes):
         # Flatten
-        pred = probs[:, class_idk, :, :].view(batch_size, -1)
+        pred = predb[:, class_idk, :, :].view(batch_size, -1)
         target = yb.cuda().view(batch_size, -1)
+        # target = (yb == class_idk).cuda().view(batch_size, -1)
 
         intersection = (pred * target).sum(1)
         union = pred.sum(1) + target.sum(1)
@@ -128,8 +128,9 @@ def batch_to_img(xb, idx):
     return img.transpose((1,2,0))
 
 def predb_to_mask(predb, idx):
-    p = F.softmax(predb[idx], 0)
-    return p.argmax(0).cpu()
+    #p = F.softmax(predb[idx], 0)
+    #return p.argmax(0).cpu()
+    return predb[idx].argmax(0).cpu()
 
 def main(model_path, pretrained):
     #batch size
