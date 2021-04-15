@@ -5,18 +5,14 @@ class Unet2D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         
-        num_channels = 32
-        self.conv1 = self.contract_block(in_channels, num_channels, 7, 3)
-        self.conv2 = self.contract_block(num_channels, num_channels * 2, 3, 1)
+        num_channels = 16
+        
+        self.conv1 = self.contract_block(in_channels, num_channels, 3, 1)
+        self.conv2 = self.contract_block(num_channels,um_channels * 2 n, 3, 1)
         self.conv3 = self.contract_block(num_channels * 2, num_channels * 4, 3, 1)
         self.conv4 = self.contract_block(num_channels * 4, num_channels * 8, 3, 1)
-        self.conv5 = self.contract_block(num_channels * 8, num_channels * 16, 3, 1)
-        
-        # ORIGINAL MODEL: 
-        # L1: 128 - 64
-        # L2: 64*2 - 32
-        # L3: 32*2 - output_channels
-        
+        self.conv5 = self.contract_block(num_channels * 8, num_channels * 16, 3, 1, last=True)
+                
         # NEW MODEL: 
         # L1: 512 - 256
         # L2: 512 - 128
@@ -28,7 +24,8 @@ class Unet2D(nn.Module):
         self.upconv4 = self.expand_block(num_channels * 16, num_channels * 4, 3, 1)
         self.upconv3 = self.expand_block(num_channels * 8, num_channels * 2, 3, 1)
         self.upconv2 = self.expand_block(num_channels * 4, num_channels, 3, 1)
-        self.upconv1 = self.expand_block(num_channels * 2, out_channels, 3, 1)
+        
+        self.upconv1 = self.expand_block(num_channels * 2, out_channels, 3, 1, last=True)
 
     def __call__(self, x):
         # Downsampling part
@@ -47,34 +44,41 @@ class Unet2D(nn.Module):
 
         return upconv1
 
-    def contract_block(self, in_channels, out_channels, kernel_size, padding):
-
-        contract = nn.Sequential(
+    def contract_block(self, in_channels, out_channels, kernel_size, padding, last=False):
+        layers = [
             torch.nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(),
-
+            torch.nn.ReLU(inplace=True),
+            
             torch.nn.Conv2d(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(),
-
-            torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            torch.nn.Dropout(p=0.1)
-        )
-
+            torch.nn.ReLU(inplace=True)
+        ]
+        
+        if not last:
+            layers.append(torch.nn.MaxPool2d(kernel_size=2, stride=2)) # padding=1
+            layers.append(torch.nn.Dropout2d(p=0.1))
+            
+        contract = nn.Sequential(*layers)
         return contract
 
-    def expand_block(self, in_channels, out_channels, kernel_size, padding):
-
-        expand = nn.Sequential(torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=padding),
-                            torch.nn.BatchNorm2d(out_channels),
-                            torch.nn.ReLU(),
-
-                            torch.nn.Conv2d(out_channels, out_channels, kernel_size, stride=1, padding=padding),
-                            torch.nn.BatchNorm2d(out_channels),
-                            torch.nn.ReLU(),
-
-                            torch.nn.ConvTranspose2d(out_channels, out_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
-                            torch.nn.Dropout(p=0.1)
-                              )
+    def expand_block(self, in_channels, out_channels, kernel_size, padding, last=False):
+        layers = [
+            torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=padding),
+            torch.nn.BatchNorm2d(out_channels),
+            torch.nn.ReLU(inplace=True),
+            
+            torch.nn.Conv2d(out_channels, out_channels, kernel_size, stride=1, padding=padding),
+            torch.nn.BatchNorm2d(out_channels),
+            torch.nn.ReLU(inplace=True)
+        ]
+        
+        if not last:
+            layers.append(torch.nn.ConvTranspose2d(out_channels, out_channels, kernel_size=2, stride=2)
+            layers.append(torch.nn.Dropout2d(p=0.1))
+        else:
+            layers.append(torch.nn.Conv2d(out_channels, out_channels, 1, stride=1))
+            #layers.append(torch.nn.Softmax(dim=1))
+                    
+        expand = nn.Sequential(*layers)
         return expand
