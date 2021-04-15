@@ -178,6 +178,8 @@ def main(model_path, pretrained):
     # MODEL: Unet2D (one input channel, 4 output channels)
     # Outputs: Probabilities for each class for each pixel in different layer)
     unet = Unet2D(1, out_channels=4)
+    print(unet)
+    
     if pretrained:
         unet.load_state_dict(torch.load(model_path))
     
