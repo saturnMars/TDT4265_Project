@@ -206,20 +206,20 @@ def main(model_path, pretrained):
     
     if pretrained:
         unet.load_state_dict(torch.load(model_path + file_name))
-    
-    loss_fn = nn.CrossEntropyLoss()
-    opt = torch.optim.Adam(unet.parameters(), lr=learn_rate)
+    else:
+        loss_fn = nn.CrossEntropyLoss()
+        opt = torch.optim.Adam(unet.parameters(), lr=learn_rate)
 
-    # Training process
-    train_loss, test_loss = train(unet, train_data, test_data, loss_fn, opt, acc_metric, dice_metric, epochs=epochs_val)
+        # Training process
+        train_loss, test_loss = train(unet, train_data, test_data, loss_fn, opt, acc_metric, dice_metric, epochs=epochs_val)
 
-    # Plot training and test losses
-    if visual_debug:
-        plt.figure(figsize=(10,8))
-        plt.plot(train_loss, label='Train loss')
-        plt.plot(test_loss, label='Test loss')
-        plt.legend()
-        plt.show()
+        # Plot training and test losses
+        if visual_debug:
+            plt.figure(figsize=(10,8))
+            plt.plot(train_loss, label='Train loss')
+            plt.plot(test_loss, label='Test loss')
+            plt.legend()
+            plt.show()
 
     # Predict on the validation data
     xb, yb = next(iter(valid_data))
@@ -251,7 +251,15 @@ def main(model_path, pretrained):
     if model_path is not None:
         if not os.path.exists(model_path):
             os.makedirs(model_path)
+            
+        # Save performance
+        with open(model_path + "/performance.txt", "w") as text_file:
+            print(f"data:{dataset}; epoch:{epochs_val}; image_resolution:{image_resolution};" 
+                  f"pre_proc:{pre_processing_steps}; acc:{round(accuracy, 4)};"
+                  f"avg_dice:{round(average_dice, 4)}; class_dice_scores: {str(class_dice)}", 
+                  file = text_file)
         
+        # Save model
         torch.save(unet.state_dict(), model_path + file_name)
 
 if __name__ == "__main__":
