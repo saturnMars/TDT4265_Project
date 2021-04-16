@@ -149,7 +149,7 @@ def main(model_path, pretrained):
     bs = 8 
 
     #epochs
-    epochs_val =  2 #50
+    epochs_val =  50 #50
 
     #learning rate
     learn_rate = 0.01
