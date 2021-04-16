@@ -1,0 +1,26 @@
+dataset:extracted_CAMUS
+epoch:1
+image_resolution:384
+pre_proc:[]
+acc:0.7698
+avg_dice:0.6915
+class_dice_scores:[0.6826, 0.7171, 0.6491, 0.7174]
+
+data:16/04/2021 19:14:22
+dataset:extracted_CAMUS
+epoch:1
+image_resolution:384
+pre_proc:[]
+acc:0.7702
+avg_dice:0.8469
+class_dice_scores:[0.3891, 0.9997, 0.9992, 0.9998]
+
+data:16/04/2021 19:54:27
+dataset:extracted_CAMUS
+epoch:1
+image_resolution:384
+pre_proc:[]
+acc:0.7455
+avg_dice:0.8439
+class_dice_scores:[0.3777, 0.9992, 0.9993, 0.9996]
+

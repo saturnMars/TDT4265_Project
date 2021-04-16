@@ -5,7 +5,7 @@ class Unet2D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         
-        num_channels = 64
+        num_channels = 32
         
         self.conv1 = self.contract_block(in_channels, num_channels, 3, 1)
         self.conv2 = self.contract_block(num_channels, num_channels * 2, 3, 1)
@@ -93,14 +93,9 @@ class Unet2D(nn.Module):
             torch.nn.Conv2d(middle_channels, middle_channels, kernel_size, stride=1, padding=padding),
             torch.nn.BatchNorm2d(middle_channels),
             torch.nn.LeakyReLU(inplace=True),
-            torch.nn.Dropout2d(p=0.2),
-            
-            torch.nn.Conv2d(middle_channels, middle_channels//2, kernel_size, stride=1, padding=padding),
-            torch.nn.BatchNorm2d(middle_channels//2),
-            torch.nn.LeakyReLU(inplace=True),
             torch.nn.Dropout2d(p=0.1),
             
-            torch.nn.Conv2d(middle_channels//2, out_channels, 1),
+            torch.nn.Conv2d(middle_channels, out_channels, 1),
             torch.nn.Softmax(dim=1)
         ]
         

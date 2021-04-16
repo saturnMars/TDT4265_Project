@@ -7,6 +7,7 @@ import time
 import os
 import argparse
 from os.path import isfile
+from datetime import datetime
 
 from pathlib import Path
 import torch
@@ -45,6 +46,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, dice_metric, ep
 
             # iterate over data
             for x, y in dataloader:
+                start_batch = time.time()
                 y = to_cuda(y)
                 x = to_cuda(x)
                 step += 1
@@ -66,29 +68,32 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, dice_metric, ep
                     with torch.no_grad():
                         outputs = model(x)
                         loss = loss_fn(outputs, y.long())
-
+                        
                 # Compute stats (accuracy, dice score)
                 acc = acc_fn(outputs, y)
-                average_dice, dice_scores = dice_metric(outputs, y)
+                #average_dice, dice_scores = dice_metric(outputs, y)
 
                 running_acc  += acc*dataloader.batch_size
-                running_dice += average_dice*dataloader.batch_size
                 running_loss += loss*dataloader.batch_size 
+                #running_dice += average_dice*dataloader.batch_size
 
                 if step % 50 == 0:
                     print(f"Current step: {step}  Loss: {round(loss.item(), 4)}  Acc: {round(acc.item(), 4)}  "
                           f"[AllocMem (Mb): {round(torch.cuda.memory_allocated()/1024/1024, 4)}]")
                     # clear_output(wait=True)
                     # print(torch.cuda.memory_summary())
+                    
+                stop_batch = time.time() - start_batch
+                #print('\nBatch complete in {:.0f}m {:.0f}s'.format(stop_batch // 60, stop_batch % 60))
 
             epoch_loss = running_loss / len(dataloader.dataset)
             epoch_acc = running_acc / len(dataloader.dataset)
-            epoch_dice = running_dice / len(dataloader.dataset)
+            #epoch_dice = running_dice / len(dataloader.dataset)
 
             print(f'--> Epoch {epoch+1}/{epochs} [PERFORMANCE: {phase}]')
             print('   ','-' * 20)
-            print(f"    {phase} Loss: {round(epoch_loss.item(), 4)}  Acc: {round(epoch_acc.item(), 4)}  "
-                  f"Dice score: {round(epoch_dice, 4)} --> {dice_scores}")
+            print(f"    {phase} Loss: {round(epoch_loss.item(), 4)}  Acc: {round(epoch_acc.item(), 4)}  ")
+                  #f"Dice score: {round(epoch_dice, 4)} --> {dice_scores}")
             print('   ','-' * 20)
 
             train_loss.append(epoch_loss) if phase=='train' else valid_loss.append(epoch_loss)
@@ -253,14 +258,17 @@ def main(model_path, pretrained):
             os.makedirs(model_path)
             
         # Save performance
-        with open(model_path + "/performance.txt", "w") as text_file:
-            print(f"data:{dataset}; epoch:{epochs_val}; image_resolution:{image_resolution};" 
-                  f"pre_proc:{pre_processing_steps}; acc:{round(accuracy, 4)};"
-                  f"avg_dice:{round(average_dice, 4)}; class_dice_scores: {str(class_dice)}", 
+        now = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        with open(model_path + "/performance.txt", "a") as text_file:
+            print(f"data:{now}\ndataset:{dataset}\n"
+                  f"epoch:{epochs_val}\nimage_resolution:{image_resolution}\n" 
+                  f"pre_proc:{pre_processing_steps}\nacc:{round(accuracy, 4)}\n"
+                  f"avg_dice:{round(average_dice, 4)}\nclass_dice_scores:{str(class_dice)}\n", 
                   file = text_file)
         
         # Save model
         torch.save(unet.state_dict(), model_path + file_name)
+        print(f"Model state has been saved in /{model_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='train function')
