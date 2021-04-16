@@ -13,6 +13,10 @@ def preprocessing(image, pre_processing_steps, **kwargs):
 
     image_pre = image.copy()
     bright = kwargs.get('brightness', 1)
+    bil_sig_col = kwargs.get('sigmaColor', 15)
+    bil_sig_space = kwargs.get('sigmaSpace', 15)
+    bil_ker_size = kwargs.get('bilatKernelSize', 15)
+
     for step in pre_processing_steps:
         if step == 'GaussBlur':
             image_pre = image_pre.filter(ImageFilter.GaussianBlur)
@@ -30,9 +34,12 @@ def preprocessing(image, pre_processing_steps, **kwargs):
             image_pre = image_pre.filter(ImageFilter.EDGE_ENHANCE_MORE)
         elif step == 'FIND_EDGES':
             image_pre = image_pre.filter(ImageFilter.FIND_EDGES)
-        elif step == 'bright':
+        elif step == 'Bright':
             enhancer = ImageEnhance.Brightness(image_pre)
             image_pre = enhancer.enhance(bright)
+        elif step == 'BilateralSmooth':
+            bilateral = cv2.bilateralFilter(np.array(image_pre), bil_ker_size, bil_sig_col, bil_sig_space)
+            image_pre = Image.fromarray(np.uint8(bilateral)).convert('L')
         else:
             raise Exception('Unknown preprocessing step')
 
@@ -50,7 +57,8 @@ if __name__ == "__main__":
     # Additional parameters
     dict = {'brightness': 1.5}
     # The order is relevant here, so be careful when you put something
-    pre_processing_steps = ['GaussBlur'
+    pre_processing_steps = [#'GaussBlur',
+                            'BilateralSmooth'
                             #'MedianFilter',
                             #'bright',
                             #'EDGE_ENHANCE',

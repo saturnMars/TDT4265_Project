@@ -137,6 +137,13 @@ def predb_to_mask(predb, idx):
     #return p.argmax(0).cpu()
     return predb[idx].argmax(0).cpu()
 
+def pre_processing_verbose(pre_processing_steps):
+    print(f'The dataset will be undergoes the following pre-processing steps: ')
+    for step in pre_processing_steps:
+        print(f'{step} ')
+    return
+
+
 def main(model_path, pretrained):
     # Batch size
     bs = 8 
@@ -153,11 +160,16 @@ def main(model_path, pretrained):
     #enable if you want to see some plotting
     visual_debug = False
 
+    # In this list define the sequentiality of the pre-processing steps
+    # Recommended steps 'GaussBlur' and 'BilateralSmooth' (or both the image will be very smoothed)
+    pre_processing_steps = ['GaussBlur']
+    pre_processing_verbose(pre_processing_steps)
+
     # Load the data (raw and gt images)
     base_path = Path('Data') # /work/datasets/medical_project
     dataset = "extracted_CAMUS" #CAMUS_resized
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
-                         Path.joinpath(base_path, dataset, 'train_gt'))
+                         Path.joinpath(base_path, dataset, 'train_gt'), pre_processing_steps=pre_processing_steps)
     
     # Split the training, test and validation datasets and initialize the data loaders
     train_size = int(0.8 * len(data))

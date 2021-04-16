@@ -148,7 +148,8 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
     # We need to find the index of the image associated to the time-instance (Sampling time of ECG different of TEE
     # acquisition frequency)
     idx_ed = int(np.round(tissue_data.shape[2] * ed_event[0] / len(index_list)))
-    tissue_all['ED'] = tissue_data[:, :, idx_ed]
+    # We need to rotate the image of 180°
+    tissue_all['ED'] = np.fliplr(tissue_data[:, :, idx_ed])
 
     if str.lower(user_response) == 'y':
         # =========== EXTRACTION OF THE ES EVENT ===========
@@ -167,7 +168,8 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
         plt.close()
 
         idx_es = int(np.round(tissue_data.shape[2] * es_event[0][0] / len(index_list)))
-        tissue_all['ES'] = tissue_data[:, :, idx_es]
+        # We need to rotate the image of 180°
+        tissue_all['ES'] = np.fliplr(tissue_data[:, :, idx_es])
 
     elif str.lower(user_response) == 'n':
         pass
@@ -221,8 +223,6 @@ def main():
             save_from_PIL_to_tif(PIL_tte_ed, saving_directory_tee, current_hdf5, 'ED', 'gray', resize_dim=resize_dim)
 
             if 'ES' in tissue_all:
-                # For the verbose purpose
-                verbose_index += 1
 
                 tee_es = tissue_all['ES']
                 # Converting the images to PIL

@@ -1,18 +1,20 @@
 import numpy as np
 import torch
 
+from preprocessing import preprocessing
 from pathlib import Path
 from torch.utils.data import Dataset, DataLoader, sampler
 from PIL import Image
 
 #load data from a folder
 class DatasetLoader(Dataset):
-    def __init__(self, gray_dir, gt_dir, pytorch=True):
+    def __init__(self, gray_dir, gt_dir, pytorch=True, pre_processing_steps=[]):
         super().__init__()
         
         # Loop through the files in red folder and combine, into a dictionary, the other bands
         self.files = [self.combine_files(f, gt_dir) for f in gray_dir.iterdir() if not f.is_dir()]
         self.pytorch = pytorch
+        self.pre_processing_steps = pre_processing_steps
         
     def combine_files(self, gray_file: Path, gt_dir):
         
@@ -26,9 +28,14 @@ class DatasetLoader(Dataset):
         return len(self.files)
      
     def open_as_array(self, idx, invert=False):
-        #open ultrasound data
-        raw_us = np.stack([np.array(Image.open(self.files[idx]['gray'])),
-        ], axis=2)
+        # Open ultrasound data
+        PIL_image = Image.open(self.files[idx]['gray'])
+
+        # Pre_processing steps
+        if self.pre_processing_steps:
+            PIL_image = preprocessing(PIL_image, self.pre_processing_steps)
+
+        raw_us = np.stack([np.array(PIL_image)], axis=2)
     
         if invert:
             raw_us = raw_us.transpose((2,0,1))
