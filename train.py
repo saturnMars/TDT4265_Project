@@ -138,9 +138,10 @@ def predb_to_mask(predb, idx):
     return predb[idx].argmax(0).cpu()
 
 def pre_processing_verbose(pre_processing_steps):
-    print(f'The dataset will be undergoes the following pre-processing steps: ')
-    for step in pre_processing_steps:
-        print(f'{step} ')
+    if len(pre_processing_steps) > 1:
+        print(f'The dataset will be undergoes the following pre-processing steps: ')
+        for step in pre_processing_steps:
+            print(f'{step}')
     return
 
 
@@ -149,7 +150,7 @@ def main(model_path, pretrained):
     bs = 8 
 
     #epochs
-    epochs_val =  50 #50
+    epochs_val =  50
 
     #learning rate
     learn_rate = 0.01
@@ -159,11 +160,15 @@ def main(model_path, pretrained):
     
     #enable if you want to see some plotting
     visual_debug = False
-    image_resolution = 384  # Resolution of the image - Naive
+    
+    # Resolution of the image - Watch out Memory usage (Naive)
+    # (1, 1.5 or 2, 3, 4) 
+    scale = 1 
+    image_resolution =  int(384 * scale)  
 
     # In this list define the sequentiality of the pre-processing steps
     # Recommended steps 'GaussBlur' and 'BilateralSmooth' (or both the image will be very smoothed)
-    pre_processing_steps = ['GaussBlur']
+    pre_processing_steps = []
     pre_processing_verbose(pre_processing_steps)
 
     # Load the data (raw and gt images)
