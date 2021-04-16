@@ -4,11 +4,11 @@ from PIL import Image
 from medimage import image
 import os
 import h5py
+import cv2
 from pathlib import Path
 from scipy.signal import find_peaks
 
 
-# todo: Remain the extraction of the ground truth
 def prepare_TTE_image_data_gt(directory_train, patient, type):
     """
     This function is used to extract ES ED pair of images data with its associated ground truth image, from the CAMUS
@@ -38,7 +38,7 @@ def prepare_TTE_image_data_gt(directory_train, patient, type):
     return image_data, image_gt
 
 
-def save_from_PIL_to_tif(PIL_image, saving_directory, patient, image_type, type, resize_dim=384):
+def save_from_PIL_to_tif(PIL_image, saving_directory, patient, image_type, type, resize_dim=None):
     """
     Function used to convert a image from PIL format to a tif format. Before saving it the image will be resized
     in order to have a square image with the given resolution (i.e. resize_dim)
@@ -46,7 +46,7 @@ def save_from_PIL_to_tif(PIL_image, saving_directory, patient, image_type, type,
     Parameters
     ----------
     PIL_image: PIL image
-        TTE image
+        TTE / TEE image
     saving_directory: Path | string
         Directory where to save the image
     patient: string
@@ -66,15 +66,20 @@ def save_from_PIL_to_tif(PIL_image, saving_directory, patient, image_type, type,
     # Make the image's pixels iso-tropic
     PIL_image = PIL_image.resize((max_dimension, max_dimension))
 
-    # Resize to the desired resolution
-    PIL_image = PIL_image.resize((resize_dim, resize_dim))
+    if resize_dim is not None:
+        # Resize to the desired resolution
+        PIL_image = PIL_image.resize((resize_dim, resize_dim))
+    else:
+        pass
 
     if type == 'gray':
         type_path = 'train_gray'
-
     elif type == 'gt':
         type_path = 'train_gt'
-
+    elif type == 'test_gray':
+        type_path = 'test_gray'
+    elif type == 'test_gt':
+        type_path = 'test_gt'
     else:
         raise Exception('Unknown data type')
 
@@ -89,10 +94,10 @@ def medimage_to_PIL(medimage):
     return Image.fromarray(np.uint8(medimage.imdata.squeeze())).convert('L')
 
 
-def ndarray_to_PIL(hdf5_image):
+def ndarray_to_PIL(narray_image):
     """ This function is used to convert a ndarray image object to a PIL image """
     # Converting hdf5 into PIL image
-    return Image.fromarray(np.uint8(hdf5_image.squeeze())).convert('L')
+    return Image.fromarray(np.uint8(narray_image.squeeze())).convert('L')
 
 
 def custom_tee_verbose(verbose_index):
@@ -185,6 +190,7 @@ def main():
     # Directory where there is the TRAINING CAMUS DATASET / TEE
     directory_tte = Path('training')
     directory_tee = Path('data/TEE')
+    directory_tee_labeled = ('data/DataTEEGroundTruth')
     # Directory where i would like to store the images extracted from the CAMUS and TEE
     saving_directory_tte = Path('data\extracted_CAMUS')
     saving_directory_tee = Path('data\extracted_TEE')
@@ -196,10 +202,10 @@ def main():
     # Type of image that we want to extract for TTE dataset
     type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
 
-    # ################## Loop through all the patients (EXTRACTION OF THE TEE) ##################
+    # ################## Loop through all the patients (EXTRACTION OF THE TEE - WITHOUT GT) ##################
     verbose_index = 0
     user_response = input('Do you want to extract (it will be manual) the ES EVENTS for the TEE dataset? [y/n]')
-    print('..Extraction of TEE/TTE images')
+    print('.. Extraction of TEE images (without the GT data)')
 
     for patient in os.listdir(directory_tee):
 
@@ -230,8 +236,35 @@ def main():
                 # Saving Images (GRAY DATA ..)
                 save_from_PIL_to_tif(PIL_tte_es, saving_directory_tee, current_hdf5, 'ES', 'gray', resize_dim=resize_dim)
 
+    # ################## Loop through all the patients (EXTRACTION OF THE TEE - WITH GT) ##################
+    print('.. Extraction of TEE images (with the GT data)')
+    path_tee_labeled_gray = os.listdir(os.path.join(directory_tee_labeled, 'train_gray'))
+    path_tee_labeled_gt = os.listdir(os.path.join(directory_tee_labeled, 'train_gt'))
 
-    # ################## Loop through all the patients (EXTRACTION OF THE TTE) ##################
+    # Loop trough the given folder
+    for tee_gray_label, tee_gt_label in zip(path_tee_labeled_gray, path_tee_labeled_gt):
+        # Load image into a PIL format
+        PIL_tee_gray_arr = cv2.imread(os.path.join(directory_tee_labeled, 'train_gray', tee_gray_label))
+        PIL_tee_gt_arr = cv2.imread(os.path.join(directory_tee_labeled, 'train_gt', tee_gt_label))
+
+        # Cropp the image to remove the black background
+        height, width = np.max(PIL_tee_gray_arr, axis=1), np.max(PIL_tee_gray_arr, axis=0)
+        idx_h = list(np.where(height > 0)[0])
+        idx_w = list(np.where(width > 0)[0])
+
+        # Cropping the images
+        cropped_gray = PIL_tee_gray_arr[idx_h[0]:idx_h[-1], idx_w[0]:idx_w[-1]]
+        cropped_gt = PIL_tee_gt_arr[idx_h[0]:idx_h[-1], idx_w[0]:idx_w[-1]]
+        cropped_gray_PIL = ndarray_to_PIL(np.fliplr(cropped_gray))
+        cropped_gt_PIL = ndarray_to_PIL(np.fliplr(cropped_gt))
+
+        # Extract the string
+        patient_gray = tee_gray_label.split('.jpg')[0]
+        patient_gt = tee_gt_label.split('.tif')[0]
+        save_from_PIL_to_tif(cropped_gray_PIL, saving_directory_tee, patient_gray, '', 'test_gray', resize_dim=resize_dim)
+        save_from_PIL_to_tif(cropped_gt_PIL, saving_directory_tee, patient_gt, '', 'test_gt', resize_dim=resize_dim)
+
+    # ################## Loop through all the patients (EXTRACTION OF THE TTE - CAMUS) ##################
     for patient in os.listdir(directory_tte):
 
         # Looping through ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
