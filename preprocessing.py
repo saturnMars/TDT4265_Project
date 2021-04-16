@@ -51,7 +51,7 @@ if __name__ == "__main__":
     CAMUS_path = os.path.join(directory_main, 'extracted_CAMUS', 'train_gray')
     TEE_path = os.path.join(directory_main, 'extracted_TEE', 'train_gray')
 
-    test_image = 'gray_patient0020_4CH_ES.tif'
+    test_image = 'gray_patient0001_2CH_ED.tif'
     image = Image.open(os.path.join(CAMUS_path, test_image))
     image.show(title='original')
     # Additional parameters

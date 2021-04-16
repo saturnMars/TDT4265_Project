@@ -168,7 +168,7 @@ def main(model_path, pretrained):
 
     # Load the data (raw and gt images)
     base_path = Path('Data') # /work/datasets/medical_project
-    dataset = "extracted_CAMUS" #CAMUS_resized
+    dataset = "extracted_CAMUS" # CAMUS_resized
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
                          Path.joinpath(base_path, dataset, 'train_gt'), pre_processing_steps=pre_processing_steps,
                          image_resolution=image_resolution)

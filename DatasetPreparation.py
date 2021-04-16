@@ -196,7 +196,7 @@ def main():
     saving_directory_tee = Path('data\extracted_TEE')
 
     # PARAMS
-    resize_dim = 384
+    resize_dim = None
     # Hearbeat duration according to the literature
     heartbeat_duration = 0.8    # [sec]
     # Type of image that we want to extract for TTE dataset
