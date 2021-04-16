@@ -8,13 +8,14 @@ from PIL import Image
 
 #load data from a folder
 class DatasetLoader(Dataset):
-    def __init__(self, gray_dir, gt_dir, pytorch=True, pre_processing_steps=[]):
+    def __init__(self, gray_dir, gt_dir, pytorch=True, pre_processing_steps=[], image_resolution=384):
         super().__init__()
         
         # Loop through the files in red folder and combine, into a dictionary, the other bands
         self.files = [self.combine_files(f, gt_dir) for f in gray_dir.iterdir() if not f.is_dir()]
         self.pytorch = pytorch
         self.pre_processing_steps = pre_processing_steps
+        self.resolution = image_resolution
         
     def combine_files(self, gray_file: Path, gt_dir):
         
@@ -29,7 +30,7 @@ class DatasetLoader(Dataset):
      
     def open_as_array(self, idx, invert=False):
         # Open ultrasound data
-        PIL_image = Image.open(self.files[idx]['gray'])
+        PIL_image = Image.open(self.files[idx]['gray']).resize((self.resolution, self.resolution))
 
         # Pre_processing steps
         if self.pre_processing_steps:
@@ -46,7 +47,7 @@ class DatasetLoader(Dataset):
 
     def open_mask(self, idx, add_dims=False):
         #open mask file
-        raw_mask = np.array(Image.open(self.files[idx]['gt']))
+        raw_mask = np.array(Image.open(self.files[idx]['gt']).resize((self.resolution, self.resolution)))
         #raw_mask = np.where(raw_mask>100, 1, 0)
         
         return np.expand_dims(raw_mask, 0) if add_dims else raw_mask

@@ -159,6 +159,7 @@ def main(model_path, pretrained):
     
     #enable if you want to see some plotting
     visual_debug = False
+    image_resolution = 384  # Resolution of the image - Naive
 
     # In this list define the sequentiality of the pre-processing steps
     # Recommended steps 'GaussBlur' and 'BilateralSmooth' (or both the image will be very smoothed)
@@ -169,7 +170,8 @@ def main(model_path, pretrained):
     base_path = Path('Data') # /work/datasets/medical_project
     dataset = "extracted_CAMUS" #CAMUS_resized
     data = DatasetLoader(Path.joinpath(base_path, dataset, 'train_gray'), 
-                         Path.joinpath(base_path, dataset, 'train_gt'), pre_processing_steps=pre_processing_steps)
+                         Path.joinpath(base_path, dataset, 'train_gt'), pre_processing_steps=pre_processing_steps,
+                         image_resolution=image_resolution)
     
     # Split the training, test and validation datasets and initialize the data loaders
     train_size = int(0.8 * len(data))
