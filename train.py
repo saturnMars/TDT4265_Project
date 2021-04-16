@@ -4,6 +4,7 @@ import matplotlib as mp
 from utils import *
 import matplotlib.pyplot as plt
 import time
+import os
 import argparse
 from os.path import isfile
 
@@ -17,17 +18,16 @@ from DatasetLoader import DatasetLoader
 from Unet2D import Unet2D
 from PIL import Image
 
-def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
+def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, dice_metric, epochs=1):
     start = time.time()
     to_cuda(model)
 
     train_loss, valid_loss = [], []
 
     best_acc = 0.0
-
     for epoch in range(epochs):
-        print(f'Epoch {epoch + 1}/{epochs}')
-        print('-' * 10)
+        print(f'\nEpoch {epoch + 1}/{epochs} [START]')
+        print('-' * 40)
 
         for phase in ['train', 'valid']:
             if phase == 'train':
@@ -39,6 +39,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 
             running_loss = 0.0
             running_acc = 0.0
+            running_dice = 0.0
 
             step = 0
 
@@ -66,29 +67,34 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
                         outputs = model(x)
                         loss = loss_fn(outputs, y.long())
 
-                # stats - whatever is the phase
+                # Compute stats (accuracy, dice score)
                 acc = acc_fn(outputs, y)
+                average_dice, dice_scores = dice_metric(outputs, y)
 
                 running_acc  += acc*dataloader.batch_size
+                running_dice += average_dice*dataloader.batch_size
                 running_loss += loss*dataloader.batch_size 
 
-                if step % 100 == 0:
+                if step % 50 == 0:
+                    print(f"Current step: {step}  Loss: {round(loss.item(), 4)}  Acc: {round(acc.item(), 4)}  "
+                          f"[AllocMem (Mb): {round(torch.cuda.memory_allocated()/1024/1024, 4)}]")
                     # clear_output(wait=True)
-                    print(f'Current step: {step}  Loss: {loss}  Acc: {acc}  AllocMem (Mb): {torch.cuda.memory_allocated()/1024/1024}')
                     # print(torch.cuda.memory_summary())
 
             epoch_loss = running_loss / len(dataloader.dataset)
             epoch_acc = running_acc / len(dataloader.dataset)
+            epoch_dice = running_dice / len(dataloader.dataset)
 
-            print(f'Epoch {epoch+1}/{epochs}')
-            print('-' * 10)
-            print('{} Loss: {:.4f} Acc: {}'.format(phase, epoch_loss, epoch_acc))
-            print('-' * 10)
+            print(f'--> Epoch {epoch+1}/{epochs} [PERFORMANCE: {phase}]')
+            print('   ','-' * 20)
+            print(f"    {phase} Loss: {round(epoch_loss.item(), 4)}  Acc: {round(epoch_acc.item(), 4)}  "
+                  f"Dice score: {round(epoch_dice, 4)} --> {dice_scores}")
+            print('   ','-' * 20)
 
             train_loss.append(epoch_loss) if phase=='train' else valid_loss.append(epoch_loss)
 
     time_elapsed = time.time() - start
-    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+    print('\nTraining complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     
     return train_loss, valid_loss    
 
@@ -103,8 +109,7 @@ def dice_metric(predb, yb, smooth = 1e-5):
     for class_idk in range(num_classes):
         # Flatten
         pred = predb[:, class_idk, :, :].view(batch_size, -1)
-        target = yb.cuda().view(batch_size, -1)
-        # target = (yb == class_idk).cuda().view(batch_size, -1)
+        target = to_cuda(yb).view(batch_size, -1)
 
         intersection = (pred * target).sum(1)
         union = pred.sum(1) + target.sum(1)
@@ -133,11 +138,11 @@ def predb_to_mask(predb, idx):
     return predb[idx].argmax(0).cpu()
 
 def main(model_path, pretrained):
-    #batch size
-    bs = 8 #12
+    # Batch size
+    bs = 8 
 
     #epochs
-    epochs_val =  1#50
+    epochs_val =  2 #50
 
     #learning rate
     learn_rate = 0.01
@@ -163,11 +168,11 @@ def main(model_path, pretrained):
     train_data = DataLoader(train_dataset, batch_size=bs, shuffle=True)
     test_data = DataLoader(test_dataset, batch_size=bs, shuffle=True)
     valid_data = DataLoader(valid_dataset, batch_size=bs, shuffle=True)
-    print(f"\nItems loaded: {len(data)} [training: {len(train_dataset)}, test: {len(test_dataset)}, valid: {len(valid_dataset)}]")
+    print(f"\nImages loaded: {len(data)} [training: {len(train_dataset)}, test: {len(test_dataset)}, valid: {len(valid_dataset)}]")
     
     # Visualize shape of raw and ground true images
     xb, yb = next(iter(train_data))
-    print(f"RAW IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
+    print(f"RAW IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}")
     
     if visual_debug:
         idk_image = 150
@@ -176,19 +181,18 @@ def main(model_path, pretrained):
         ax[1].imshow(data.open_mask(idk_image))
         plt.show()
 
-    # MODEL: Unet2D (one input channel, 4 output channels)
-    # Outputs: Probabilities for each class for each pixel in different layer)
-    unet = Unet2D(1, out_channels=4)
-    print(unet)
+    # MODEL: U-Net 2D: Convolutional Networks for Biomedical Image Segmentation
+    unet = Unet2D(in_channels=1, out_channels=4)
+    #print(unet)
     
     if pretrained:
-        unet.load_state_dict(torch.load(model_path))
+        unet.load_state_dict(torch.load(model_path + file_name))
     
     loss_fn = nn.CrossEntropyLoss()
     opt = torch.optim.Adam(unet.parameters(), lr=learn_rate)
 
     # Training process
-    train_loss, test_loss = train(unet, train_data, test_data, loss_fn, opt, acc_metric, epochs=epochs_val)
+    train_loss, test_loss = train(unet, train_data, test_data, loss_fn, opt, acc_metric, dice_metric, epochs=epochs_val)
 
     # Plot training and test losses
     if visual_debug:
@@ -206,12 +210,14 @@ def main(model_path, pretrained):
     # Evaluation - Accuracy
     accuracy = acc_metric(predb, yb).item()
     baseline_accuracy = 0.9705810547 # TRAINING TIME: 102m 6s
-    print(f"\nFinal Accuracy: {round(accuracy, 4)} (delta to baseline {round(accuracy - baseline_accuracy, 4)})")
+    print(f"\nFinal Accuracy: {round(accuracy, 4)} " 
+          f"(delta to baseline {round(accuracy - baseline_accuracy, 4)})")
     
     # Evaluation - Dice score
     average_dice, class_dice = dice_metric(predb, yb)
     baseline_dice =  0.607425 # [0.9652, 0.5956, 0.3764, 0.4925]
-    print(f"Final average DICE score: {round(average_dice, 4)} {class_dice} (delta to baseline {round(average_dice - baseline_dice, 4)})")
+    print(f"Final average DICE score: {round(average_dice, 4)} {class_dice} " 
+          f"(delta to baseline {round(average_dice - baseline_dice, 4)})\n")
     
     # show the predicted segmentations
     if visual_debug:
@@ -221,18 +227,23 @@ def main(model_path, pretrained):
             ax[i,1].imshow(yb[i])
             ax[i,2].imshow(predb_to_mask(predb, i))
         plt.show()
-        
+    
+    # Save the model
     if model_path is not None:
-        torch.save(unet.state_dict(), model_path)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        
+        torch.save(unet.state_dict(), model_path + file_name)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='train function')
 
-    parser.add_argument("--model_path", help="Path of the model", default=None)
+    parser.add_argument("--model_path", help="Path of the model", default="Saved_model")
     parser.add_argument("--pretrained", help="If us an existing model", action="store_true")
 
     args = parser.parse_args()
     model_path = args.model_path
+    file_name = "/unet_model.pt"
     pretrained = args.pretrained
     
     if pretrained:

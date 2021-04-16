@@ -5,7 +5,7 @@ class Unet2D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         
-        num_channels = 64
+        num_channels = 32
         
         self.conv1 = self.contract_block(in_channels, num_channels, 3, 1)
         self.conv2 = self.contract_block(num_channels, num_channels * 2, 3, 1)
