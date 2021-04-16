@@ -160,7 +160,8 @@ def main(model_path, pretrained):
     #enable if you want to see some plotting
     visual_debug = False
 
-    # In this list define the sequentiality of the pre-processing steos
+    # In this list define the sequentiality of the pre-processing steps
+    # Recommended steps 'GaussBlur' and 'BilateralSmooth' (or both the image will be very smoothed)
     pre_processing_steps = ['GaussBlur']
     pre_processing_verbose(pre_processing_steps)
 
