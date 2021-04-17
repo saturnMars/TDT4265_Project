@@ -13,7 +13,7 @@ scale = 1
 
 MODEL_PATH = './models/'
 
-FILE_NAME = None
+FILE_NAME = 'terminal_test'
 
 LOAD = False
 
@@ -21,7 +21,8 @@ DATA_PARAMS = {
     'batch_size' : 8,
     'base_path' : Path('data'),
     'dataset' : 'extracted_CAMUS',
-    'image_resolution' : int(384 * scale)
+    'image_resolution' : int(384 * scale),
+    'database_size' : 600
 }
 
 # The order is relevant here, so be careful when you put something
@@ -36,5 +37,5 @@ PREP_STEPS = ['GaussBlur'
 
 TRAIN_TRANSFORMS = A.Compose([
     A.HorizontalFlip(p=0.5),
-    A.RandomBrightnessContrast(p=0.2),
+    # A.RandomBrightnessContrast(p=0.2),
 ])

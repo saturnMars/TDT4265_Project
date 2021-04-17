@@ -78,12 +78,11 @@ class DatasetLoader(Dataset):
         
         return Image.fromarray(arr.astype(np.uint8), 'RGB')
     
-def train_test_val_split(base_path, dataset, use_partial):
+def train_test_val_split(base_path, dataset, database_size):
     random.seed(1)
     files = [f for f in Path.joinpath(base_path, dataset, 'train_gray').iterdir() if not f.is_dir()]
 
-    if use_partial:
-        files = sample(files, 500)
+    files = sample(files, database_size)
     # Split the training, test and validation datasets and initialize the data loaders
     train_size = int(0.8 * len(files))
     test_size = int(0.1 * len(files))
@@ -96,13 +95,14 @@ def train_test_val_split(base_path, dataset, use_partial):
     
     return [files[i] for i in train_file_ids], [files[i] for i in test_file_ids], [files[i] for i in val_file_ids]
 
-def load_train_test_val(data_params, prep_steps=None, train_transform=None, use_partial=False):
+def load_train_test_val(data_params, prep_steps=None, train_transform=None):
     base_path = data_params['base_path']
     dataset = data_params['dataset']
     image_resolution = data_params['image_resolution']
     batch_size = data_params['batch_size']
+    database_size = data_params['database_size']
     
-    train_files, test_files, val_files = train_test_val_split(base_path, dataset, use_partial = use_partial)
+    train_files, test_files, val_files = train_test_val_split(base_path, dataset, database_size = database_size)
 
     train_dataset = DatasetLoader(train_files,
                                   Path.joinpath(base_path, dataset, 'train_gt'),
