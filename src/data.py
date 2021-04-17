@@ -58,8 +58,9 @@ class DatasetLoader(Dataset):
     
     def __getitem__(self, idx):
         #get the image and mask as arrays
-        x = self.open_as_array(idx, invert=self.pytorch)
+        x = self.open_as_array(idx, invert=self.pytorch).astype('float32')
         y = self.open_mask(idx, add_dims=False)
+        
         if self.transform is not None:
             transformed = self.transform(image=x, mask=y)
             x = transformed['image']
@@ -89,3 +90,38 @@ def train_test_val_split(base_path, dataset):
     test_file_ids = not_train_file_ids[val_size:]
     
     return [files[i] for i in train_file_ids], [files[i] for i in test_file_ids], [files[i] for i in val_file_ids]
+
+def load_train_test_val(data_params, prep_steps=None, train_transform=None):
+    base_path = data_params['base_path']
+    dataset = data_params['dataset']
+    image_resolution = data_params['image_resolution']
+    batch_size = data_params['batch_size']
+    
+    train_files, test_files, val_files = train_test_val_split(base_path, dataset)
+
+    train_dataset = DatasetLoader(train_files,
+                                  Path.joinpath(base_path, dataset, 'train_gt'),
+                                  prep_steps = prep_steps,
+                                  transform = train_transform,
+                                  image_resolution = image_resolution)
+
+    test_dataset = DatasetLoader(test_files,
+                                 Path.joinpath(base_path, dataset, 'train_gt'),
+                                  prep_steps = prep_steps,
+                                  image_resolution = image_resolution)
+
+    valid_dataset = DatasetLoader(val_files,
+                                  Path.joinpath(base_path, dataset, 'train_gt'),
+                                  prep_steps = prep_steps,
+                                  image_resolution = image_resolution)
+
+    train_data = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_data = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    valid_data = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
+    print(f"\nItems loaded: {len(train_dataset)+len(test_dataset)+len(valid_dataset)} [training: {len(train_dataset)}, test: {len(test_dataset)}, valid: {len(valid_dataset)}]")
+
+    # Visualize shape of raw and ground true images
+    xb, yb = next(iter(train_data))
+    print(f"RAW IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
+    
+    return train_data, test_data, valid_data

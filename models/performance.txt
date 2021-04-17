@@ -24,3 +24,22 @@ acc:0.7455
 avg_dice:0.8439
 class_dice_scores:[0.3777, 0.9992, 0.9993, 0.9996]
 
+
+data:17/04/2021 18:16:42
+dataset:extracted_CAMUS
+epoch:1
+image_resolution:384
+pre_proc:['GaussBlur']
+acc:0.7904
+avg_dice:0.7346
+class_dice_scores:[0.4954, 0.5803, 0.9189, 0.9437]
+ description:Test the saving function
+data:17/04/2021 18:31:13
+dataset:extracted_CAMUS
+epoch:1
+image_resolution:384
+pre_proc:['GaussBlur']
+acc:0.8243
+avg_dice:0.7268
+class_dice_scores:[0.6379, 0.4718, 0.8045, 0.9929]
+ description:Test the saving function

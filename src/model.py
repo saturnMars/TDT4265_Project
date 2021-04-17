@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+from datetime import datetime
+
 class Unet2D(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -94,3 +96,4 @@ class Unet2D(nn.Module):
         
         last = nn.Sequential(*layers)
         return last
+
