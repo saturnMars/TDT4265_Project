@@ -5,7 +5,7 @@ from params import *
 
 def batch_to_img(xb, idx):
     img = np.array(xb[idx,0:3])
-    return img.transpose((1,2,0))
+    return img.transpose((1,2,0))[:, :, 0]
 
 def predb_to_mask(predb, idx):
     #p = F.softmax(predb[idx], 0)

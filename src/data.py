@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader, sampler
 from src.preprocessing import preprocessing
 
 from random import sample
+import random
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -14,7 +15,7 @@ class DatasetLoader(Dataset):
         super().__init__()
         
         self.transform = transform
-        
+
         # Loop through the files in red folder and combine, into a dictionary, the other bands
         self.files = [self.combine_files(f, gt_dir) for f in gray_files]
         self.pytorch = pytorch
@@ -77,8 +78,12 @@ class DatasetLoader(Dataset):
         
         return Image.fromarray(arr.astype(np.uint8), 'RGB')
     
-def train_test_val_split(base_path, dataset):
+def train_test_val_split(base_path, dataset, use_partial):
+    random.seed(1)
     files = [f for f in Path.joinpath(base_path, dataset, 'train_gray').iterdir() if not f.is_dir()]
+
+    if use_partial:
+        files = sample(files, 500)
     # Split the training, test and validation datasets and initialize the data loaders
     train_size = int(0.8 * len(files))
     test_size = int(0.1 * len(files))
@@ -91,13 +96,13 @@ def train_test_val_split(base_path, dataset):
     
     return [files[i] for i in train_file_ids], [files[i] for i in test_file_ids], [files[i] for i in val_file_ids]
 
-def load_train_test_val(data_params, prep_steps=None, train_transform=None):
+def load_train_test_val(data_params, prep_steps=None, train_transform=None, use_partial=False):
     base_path = data_params['base_path']
     dataset = data_params['dataset']
     image_resolution = data_params['image_resolution']
     batch_size = data_params['batch_size']
     
-    train_files, test_files, val_files = train_test_val_split(base_path, dataset)
+    train_files, test_files, val_files = train_test_val_split(base_path, dataset, use_partial = use_partial)
 
     train_dataset = DatasetLoader(train_files,
                                   Path.joinpath(base_path, dataset, 'train_gt'),
