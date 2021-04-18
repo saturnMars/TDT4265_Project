@@ -127,6 +127,10 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
     tissue_all = {}
     image_hdf5 = h5py.File(path_hdf5, 'r')
 
+    # Some parameters
+    QRS_time = 0.1      # [sec]
+    QT_time = 0.400     # [sec] Found in literature
+
     # Extract the tissue
     tissue_hdf5 = image_hdf5['tissue']
     tissue_data = tissue_hdf5['data']
@@ -161,12 +165,12 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
         # Due to high complexity of ES's event identification the user will need to choose one point in the ECG signal
 
         # #################### Plotting the ECG for ES identification purpose #####################
-        plt.plot(ecg_times_arr, ecg_data_arr)
-        plt.plot(ecg_times_arr[ed_event], ecg_data_arr[ed_event], "x")
+        plt.plot(ecg_data_arr)
+        plt.plot(ecg_data_arr[ed_event], "x")
         plt.title('ECG - (Please click on the ES event location)')
-        plt.xlabel('Time [sec]')
+        plt.xlabel('# Samples ')
         plt.ylabel('Amplitude [a.u]')
-        plt.xlim([ecg_times_arr[0], ecg_times_arr[len(ecg_times_arr)-1]])
+        plt.xlim([index_list[0], index_list[-1]])
         # #########################################################################################
 
         es_event = plt.ginput(n=1, show_clicks=True)
@@ -177,7 +181,13 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
         tissue_all['ES'] = np.fliplr(tissue_data[:, :, idx_es])
 
     elif str.lower(user_response) == 'n':
-        pass
+        # The ES event will be extracted in according to Literature measurements
+        # https://emedicine.medscape.com/article/2172196-overview
+        RT_time = QT_time - QRS_time/2
+        es_event = RT_time * fs + ed_event[0]
+        idx_es = int(np.round(tissue_data.shape[2] * es_event / len(index_list)))
+        tissue_all['ES'] = np.fliplr(tissue_data[:, :, idx_es])
+
     else:
         raise Exception('Unknown user response')
 
@@ -198,13 +208,16 @@ def main():
     # PARAMS
     resize_dim = None
     # Hearbeat duration according to the literature
-    heartbeat_duration = 0.8    # [sec]
+    heartbeat_duration = 1    # [sec]   # We assume 60 bpm for semplicity
     # Type of image that we want to extract for TTE dataset
     type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
 
     # ################## Loop through all the patients (EXTRACTION OF THE TEE - WITHOUT GT) ##################
     verbose_index = 0
     user_response = input('Do you want to extract (it will be manual) the ES EVENTS for the TEE dataset? [y/n]')
+    if str.lower(user_response) == 'n':
+        print("The ES event will be extracted by using an empirical QT' duration")
+
     print('.. Extraction of TEE images (without the GT data)')
 
     for patient in os.listdir(directory_tee):
