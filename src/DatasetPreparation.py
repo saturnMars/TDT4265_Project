@@ -166,14 +166,14 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
 
         # #################### Plotting the ECG for ES identification purpose #####################
         plt.plot(ecg_data_arr)
-        plt.plot(ecg_data_arr[ed_event], "x")
+        plt.plot(ed_event, ecg_data_arr[ed_event], "x")
         plt.title('ECG - (Please click on the ES event location)')
         plt.xlabel('# Samples ')
         plt.ylabel('Amplitude [a.u]')
         plt.xlim([index_list[0], index_list[-1]])
         # #########################################################################################
 
-        es_event = plt.ginput(n=1, show_clicks=True)
+        es_event = plt.ginput(n=3, show_clicks=True)
         plt.close()
 
         idx_es = int(np.round(tissue_data.shape[2] * es_event[0][0] / len(index_list)))
@@ -198,12 +198,12 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
 def main():
 
     # Directory where there is the TRAINING CAMUS DATASET / TEE
-    directory_tte = Path('training')
-    directory_tee = Path('data/TEE')
-    directory_tee_labeled = ('data/DataTEEGroundTruth')
+    directory_tte = Path('../training')
+    directory_tee = Path('../data/TEE')
+    directory_tee_labeled = ('../data/DataTEEGroundTruth')
     # Directory where i would like to store the images extracted from the CAMUS and TEE
-    saving_directory_tte = Path('data\extracted_CAMUS')
-    saving_directory_tee = Path('data\extracted_TEE')
+    saving_directory_tte = Path('../data/extracted_CAMUS')
+    saving_directory_tee = Path('../data/extracted_TEE')
 
     # PARAMS
     resize_dim = None
