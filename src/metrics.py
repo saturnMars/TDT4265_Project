@@ -48,8 +48,8 @@ def dice(predb, yb, n_classes=4, smooth=1e5):
         current_cls_target = (target == cls).float()
         intersection = (current_cls_pred * current_cls_target).sum()
         #intersection = (pred_inds[target_inds]).long().sum().data.cpu()[0]  # Cast to long to prevent overflows
-        union = current_cls_pred.sum() + current_cls_target.sum() - intersection
+        union = current_cls_pred.sum() + current_cls_target.sum()
         dice[cls, batch] = dice[cls,batch] + ((2 * intersection + smooth) / (union + smooth)).item()
 
-  dice_scores = np.mean(dice, axis=1)/n_classes
+  dice_scores = np.mean(dice, axis=1)
   return np.mean(dice_scores), list(dice_scores)

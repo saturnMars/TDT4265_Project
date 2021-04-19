@@ -22,8 +22,9 @@ def test(model, data, visualize=False):
 
     # Should we transform the float predictions into class labels??
     predb_test = torch.empty(predb.shape[0], predb.shape[2], predb.shape[2])
+
     for i in range(predb.shape[0]):
-        predb_test[i,:,:]=predb_to_mask(predb,i)
+        predb_test[i, :, :]=predb_to_mask(predb, i)
 
     # Evaluation - Dice score
     average_dice, class_dice = dice_metric(predb, yb)
