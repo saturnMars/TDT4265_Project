@@ -34,22 +34,22 @@ def dice_metric(predb, yb, smooth = 1e-5):
 
 
 
-def dice(predb, yb, smooth=1e5):
+def dice(predb, yb, n_classes=4, smooth=1e5):
   batch_size = predb.shape[0]
-  n_classes = predb.shape[1]
   dice = np.zeros((n_classes, batch_size))
 
   for batch in range(batch_size):
-      pred = predb[batch, :, :, :]
+      pred = predb[batch, :, :].view(-1)
       target = yb[batch, :, :].view(-1)
 
       # Ignore IoU for background class ("0")
       for cls in range(n_classes):  # This goes from 1:n_classes-1 -> class "0" is ignored
-        pred_cls = pred[cls, :, :].view(-1) # Flatten
-        intersection = (pred_cls * target).sum()
+        current_cls_pred = (pred == cls).float()
+        current_cls_target = (target == cls).float()
+        intersection = (current_cls_pred * current_cls_target).sum()
         #intersection = (pred_inds[target_inds]).long().sum().data.cpu()[0]  # Cast to long to prevent overflows
-        union = pred_cls.sum() + target.sum() - intersection
+        union = current_cls_pred.sum() + current_cls_target.sum() - intersection
         dice[cls, batch] = dice[cls,batch] + ((2 * intersection + smooth) / (union + smooth)).item()
 
-  dice_scores = np.mean(dice, axis=1)
+  dice_scores = np.mean(dice, axis=1)/n_classes
   return np.mean(dice_scores), list(dice_scores)
