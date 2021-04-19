@@ -8,8 +8,10 @@ EPOCHS =  50
 LEARN_RATE = 0.01
 
 # Resolution of the image - Watch out Memory usage (Naive)
-# (1, 1.5 or 2, 3, 4) 
 scale = 1 
+
+# Scale database
+db_scale = 1
 
 MODEL_PATH = './models/'
 
@@ -22,16 +24,16 @@ DATA_PARAMS = {
     'base_path' : Path('data'),
     'dataset' : 'extracted_CAMUS',
     'image_resolution' : int(384 * scale),
-    'database_size' : 1800
+    'database_size' : int(1600 * db_scale)
 }
 
 # The order is relevant here, so be careful when you put something
-PREP_STEPS = [#'GaussBlur'
+PREP_STEPS = ['GaussBlur',
             #'MedianFilter',
             #'bright',
             #'EDGE_ENHANCE',
             #'MedianFilter'
-            #'Sharp'
+            'Sharp'
             #'MaxFilter'
             ]
 
