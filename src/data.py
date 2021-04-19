@@ -79,21 +79,21 @@ class DatasetLoader(Dataset):
         return Image.fromarray(arr.astype(np.uint8), 'RGB')
     
 def train_test_val_split(base_path, dataset, database_size):
-    random.seed(1)
-    files = [f for f in Path.joinpath(base_path, dataset, 'train_gray').iterdir() if not f.is_dir()]
-
-    files = sample(files, database_size)
-    # Split the training, test and validation datasets and initialize the data loaders
-    train_size = int(0.8 * len(files))
-    test_size = int(0.1 * len(files))
-    val_size = int(0.1 * len(files))
-
-    not_train_file_ids = sample(range(len(files)), test_size+val_size)
-    train_file_ids = [i for i in range(len(files)) if i not in not_train_file_ids]
-    val_file_ids = not_train_file_ids[:val_size]
-    test_file_ids = not_train_file_ids[val_size:]
+    train_folder = 'train_gray'
+    test_folder = 'test_gray'
     
-    return [files[i] for i in train_file_ids], [files[i] for i in test_file_ids], [files[i] for i in val_file_ids]
+    # Train data
+    files = [f for f in Path.joinpath(base_path, dataset, train_folder).iterdir() if not f.is_dir()]
+    train_files = sample(files, database_size)
+
+    # Test and validation data
+    test_files = [f for f in Path.joinpath(base_path, dataset,test_folder).iterdir() if not f.is_dir()]
+
+    val_size = int(0.5 * len(test_files))
+    testing_files = test_files[val_size:]
+    val_files = test_files[:val_size]
+    
+    return train_files, testing_files, val_files
 
 def load_train_test_val(data_params, prep_steps=None, train_transform=None):
     base_path = data_params['base_path']
@@ -111,18 +111,19 @@ def load_train_test_val(data_params, prep_steps=None, train_transform=None):
                                   image_resolution = image_resolution)
 
     test_dataset = DatasetLoader(test_files,
-                                 Path.joinpath(base_path, dataset, 'train_gt'),
+                                 Path.joinpath(base_path, dataset, 'test_gt'),
                                   prep_steps = prep_steps,
                                   image_resolution = image_resolution)
 
     valid_dataset = DatasetLoader(val_files,
-                                  Path.joinpath(base_path, dataset, 'train_gt'),
+                                  Path.joinpath(base_path, dataset, 'test_gt'),
                                   prep_steps = prep_steps,
                                   image_resolution = image_resolution)
 
     train_data = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_data = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     valid_data = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True)
+    print(f"DATASET: {dataset}")
     print(f"\nItems loaded: {len(train_dataset)+len(test_dataset)+len(valid_dataset)} [training: {len(train_dataset)}, test: {len(test_dataset)}, valid: {len(valid_dataset)}]")
 
     # Visualize shape of raw and ground true images
