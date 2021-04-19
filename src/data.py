@@ -134,12 +134,13 @@ def load_train_test_val(data_params, prep_steps=None, train_transform=None):
 
 def load_tee(base_path, batch_size):
   dataset = 'extracted_TEE'
-  files = [f for f in Path.joinpath(base_path, dataset, 'train_gray').iterdir() if not f.is_dir()]
-  dataset = DatasetLoader(files, Path.joinpath(base_path, dataset, 'train_gt'))
-  
+  files = [f for f in Path.joinpath(base_path, dataset, 'test_gray').iterdir() if not f.is_dir()]
+ 
+  dataset = DatasetLoader(files, Path.joinpath(base_path, dataset, 'test_gt'))
   print("TEE IMAGES:", len(dataset))
   
   data = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+ 
   xb, yb = next(iter(data))
   print(f"RAW TEE IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
     
