@@ -80,6 +80,8 @@ def save_from_PIL_to_tif(PIL_image, saving_directory, patient, image_type, type,
         type_path = 'test_gray'
     elif type == 'test_gt':
         type_path = 'test_gt'
+    elif type == 'final_test':
+        type_path = 'final_test'
     else:
         raise Exception('Unknown data type')
 
@@ -239,7 +241,7 @@ def main():
             PIL_tte_ed = ndarray_to_PIL(tee_ed)
 
             # Saving Images (GRAY DATA ..)
-            save_from_PIL_to_tif(PIL_tte_ed, saving_directory_tee, current_hdf5, 'ED', 'gray', resize_dim=resize_dim)
+            save_from_PIL_to_tif(PIL_tte_ed, saving_directory_tee, current_hdf5, 'ED', 'final_test', resize_dim=resize_dim)
 
             if 'ES' in tissue_all:
 
@@ -247,7 +249,7 @@ def main():
                 # Converting the images to PIL
                 PIL_tte_es = ndarray_to_PIL(tee_es)
                 # Saving Images (GRAY DATA ..)
-                save_from_PIL_to_tif(PIL_tte_es, saving_directory_tee, current_hdf5, 'ES', 'gray', resize_dim=resize_dim)
+                save_from_PIL_to_tif(PIL_tte_es, saving_directory_tee, current_hdf5, 'ES', 'final_test', resize_dim=resize_dim)
 
     # ################## Loop through all the patients (EXTRACTION OF THE TEE - WITH GT) ##################
     print('.. Extraction of TEE images (with the GT data)')
@@ -268,8 +270,16 @@ def main():
         # Cropping the images
         cropped_gray = PIL_tee_gray_arr[idx_h[0]:idx_h[-1], idx_w[0]:idx_w[-1]]
         cropped_gt = PIL_tee_gt_arr[idx_h[0]:idx_h[-1], idx_w[0]:idx_w[-1]]
+
+        # Here we don't have class as 1,2,3,4 but we have 127 and 256
+        cropped_gt[cropped_gt == 127] = 1
+        cropped_gt[cropped_gt == 255] = 2
+        # cropped_gt[(cropped_gt != 255) & (cropped_gt != 127)] = 0
+
         cropped_gray_PIL = ndarray_to_PIL(np.fliplr(cropped_gray))
         cropped_gt_PIL = ndarray_to_PIL(np.fliplr(cropped_gt))
+
+
 
         # Extract the string
         patient_gray = tee_gray_label.split('.jpg')[0]
