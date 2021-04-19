@@ -32,8 +32,6 @@ def dice_metric(predb, yb, smooth = 1e-5):
     average_dice = sum(dice_scores)/num_classes
     return average_dice, dice_scores
 
-
-
 def dice(predb, yb, n_classes=4, smooth=1e5):
   batch_size = predb.shape[0]
   dice = np.zeros((n_classes, batch_size))
@@ -53,3 +51,30 @@ def dice(predb, yb, n_classes=4, smooth=1e5):
 
   dice_scores = np.mean(dice, axis=1)
   return np.mean(dice_scores), list(dice_scores)
+
+def classwise_f1(output, gt):
+  """
+  Args:
+    output: torch.Tensor of shape (n_batch, n_classes, image.shape)
+    gt: torch.LongTensor of shape (n_batch, image.shape)
+    
+  Source: 
+    https://github.com/cosmic-cortex/pytorch-UNet/blob/master/unet/metrics.py
+  """
+  epsilon = 1e-20
+  n_classes = output.shape[1]
+  gt = to_cuda(gt)
+
+  output = torch.argmax(output, dim=1)
+  
+  true_positives = torch.tensor([((output == i) * (gt == i)).sum() for i in range(n_classes)]).float()
+  selected = torch.tensor([(output == i).sum() for i in range(n_classes)]).float()
+  relevant = torch.tensor([(gt == i).sum() for i in range(n_classes)]).float()
+
+  precision = (true_positives + epsilon) / (selected + epsilon)
+  recall = (true_positives + epsilon) / (relevant + epsilon)
+  classwise_f1 = 2 * (precision * recall) / (precision + recall)
+
+  avg_dice_score = torch.mean(classwise_f1).item()
+  class_dice = [round(score.item(), 4) for score in classwise_f1]
+  return avg_dice_score, class_dice
