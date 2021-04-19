@@ -2,7 +2,7 @@ from pathlib import Path
 import albumentations as A
 
 #epochs
-EPOCHS =  1#50
+EPOCHS =  50
 
 #learning rate
 LEARN_RATE = 0.01
@@ -13,7 +13,7 @@ scale = 1
 
 MODEL_PATH = './models/'
 
-FILE_NAME = 'terminal_test'
+FILE_NAME = 'improved_unet.pt'
 
 LOAD = False
 
@@ -22,11 +22,11 @@ DATA_PARAMS = {
     'base_path' : Path('data'),
     'dataset' : 'extracted_CAMUS',
     'image_resolution' : int(384 * scale),
-    'database_size' : 30
+    'database_size' : 1800
 }
 
 # The order is relevant here, so be careful when you put something
-PREP_STEPS = ['BilateralSmooth'
+PREP_STEPS = [#'GaussBlur'
             #'MedianFilter',
             #'bright',
             #'EDGE_ENHANCE',
@@ -36,6 +36,6 @@ PREP_STEPS = ['BilateralSmooth'
             ]
 
 TRAIN_TRANSFORMS = A.Compose([
-    # A.HorizontalFlip(p=0.5),
+    #A.HorizontalFlip(p=0.5),
     # A.RandomBrightnessContrast(p=0.2),
 ])
