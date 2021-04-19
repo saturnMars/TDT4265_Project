@@ -22,11 +22,11 @@ DATA_PARAMS = {
     'base_path' : Path('data'),
     'dataset' : 'extracted_CAMUS',
     'image_resolution' : int(384 * scale),
-    'database_size' : 600
+    'database_size' : 30
 }
 
 # The order is relevant here, so be careful when you put something
-PREP_STEPS = ['GaussBlur'
+PREP_STEPS = ['BilateralSmooth'
             #'MedianFilter',
             #'bright',
             #'EDGE_ENHANCE',
@@ -36,6 +36,6 @@ PREP_STEPS = ['GaussBlur'
             ]
 
 TRAIN_TRANSFORMS = A.Compose([
-    A.HorizontalFlip(p=0.5),
+    # A.HorizontalFlip(p=0.5),
     # A.RandomBrightnessContrast(p=0.2),
 ])
