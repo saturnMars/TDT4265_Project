@@ -87,11 +87,11 @@ def train_test_val_split(base_path, dataset, database_size):
     train_files = sample(files, database_size)
 
     # Test and validation data
-    test_files = [f for f in Path.joinpath(base_path, dataset,test_folder).iterdir() if not f.is_dir()]
+    testing_files = [f for f in Path.joinpath(base_path, dataset, test_folder).iterdir() if not f.is_dir()]
 
-    val_size = int(0.5 * len(test_files))
-    testing_files = test_files[val_size:]
-    val_files = test_files[:val_size]
+    val_size = int(0.1 * len(train_files))
+    train_files = train_files[val_size:]
+    val_files = train_files[:val_size]
     
     return train_files, testing_files, val_files
 

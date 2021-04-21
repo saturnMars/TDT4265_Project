@@ -29,15 +29,15 @@ def main(msg):
 
     start = datetime.now()
     # Training process
-    train_loss, test_loss, train_acc, test_acc = train(unet, train_data, test_data, loss_fn, opt, acc_metric, epochs=EPOCHS)
+    train_loss, valid_loss, train_acc, valid_acc = train(unet, train_data, valid_data, loss_fn, opt, acc_metric, epochs=EPOCHS)
 
     end = datetime.now()
 
     print("Elapsed time is {}".format(str(end-start)))
 
-    plot_loss_acc(train_loss, test_loss, train_acc, test_acc)
+    plot_loss_acc(train_loss, valid_loss, train_acc, valid_acc)
 
-    accuracy, average_dice, class_dice = test(unet, valid_data, True)
+    accuracy, average_dice, class_dice = test(unet, test_data, True)
 
     # save the result
     msg = 'Test the saving function'
