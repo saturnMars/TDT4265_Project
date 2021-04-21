@@ -116,7 +116,7 @@ def load_train_test_val(data_params, prep_steps=None, train_transform=None):
                                   image_resolution = image_resolution)
 
     valid_dataset = DatasetLoader(val_files,
-                                  Path.joinpath(base_path, dataset, 'test_gt'),
+                                  Path.joinpath(base_path, dataset, 'train_gt'),
                                   prep_steps = prep_steps,
                                   image_resolution = image_resolution)
 
