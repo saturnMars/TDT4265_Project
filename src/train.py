@@ -31,12 +31,13 @@ def validation(model, valid_dl, loss_fn, acc_fn):
             loss = loss_fn(outputs, y.long())
             
         acc = acc_fn(outputs, y)
+        dice_acc = dice_metric(outputs, y)
             
         running_acc  += acc*valid_dl.batch_size
         running_loss += loss*valid_dl.batch_size
     model.train(True)
 
-    return running_loss / len(valid_dl.dataset), running_acc / len(valid_dl.dataset)
+    return running_loss / len(valid_dl.dataset), running_acc / len(valid_dl.dataset), dice_acc
 
 def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
     to_cuda(model)
@@ -77,19 +78,20 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
 
             # stats - whatever is the phase
             acc = acc_fn(outputs, y)
+            dice = dice_metric(outputs, y)
 
             running_acc  += acc*train_dl.batch_size
             running_loss += loss*train_dl.batch_size 
             if step % 40 == 0:
                 # clear_output(wait=True)
-                v_loss, v_acc = validation(model, valid_dl, loss_fn, acc_fn)
+                v_loss, v_acc, v_dice = validation(model, valid_dl, loss_fn, acc_fn)
 
                 valid_loss.append(v_loss)
                 valid_acc.append(v_acc)
                 
                 train_loss.append(loss)
                 train_acc.append(acc)
-                print(f'Current step: {step}  Loss: {loss}  Acc: {acc} Val Loss: {v_loss} Val Acc: {v_acc} ')
+                print(f'Current step: {step}  Loss: {loss:.4f}  Acc: {acc:.3f} Dice: {dice} Val Loss: {v_loss:.4f} Val Acc: {v_acc:.3f} Val Dice: {v_dice}')
 
         epoch_loss = running_loss / len(train_dl.dataset)
         epoch_acc = running_acc / len(train_dl.dataset)
