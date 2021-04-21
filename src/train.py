@@ -96,7 +96,7 @@ def train(model, train_dl, valid_dl, loss_fn, optimizer, acc_fn, epochs=1):
         epoch_loss = running_loss / len(train_dl.dataset)
         epoch_acc = running_acc / len(train_dl.dataset)
 
-        v_loss, v_acc = validation(model, valid_dl, loss_fn, acc_fn)
+        v_loss, v_acc, v_dice = validation(model, valid_dl, loss_fn, acc_fn)
 
         print(f'Epoch {epoch+1}/{epochs}')
         print('-' * 10)
