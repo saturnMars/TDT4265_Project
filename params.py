@@ -3,7 +3,7 @@ import albumentations as A
 from src.losses import dice_loss, cross_entropy_loss, dice_cross_entropy_loss
 
 #epochs
-EPOCHS =  1
+EPOCHS =  50
 
 #learning rate
 LEARN_RATE = 0.01
@@ -24,19 +24,19 @@ LOSS = dice_cross_entropy_loss
 
 DATA_PARAMS = {
     'batch_size' : 8,
-    'base_path' : Path('data'),
+    'base_path' : Path('Data'),
     'dataset' : 'extracted_CAMUS',
     'image_resolution' : int(384 * scale),
     'database_size' : int(1600 * db_scale)
 }
 
 # The order is relevant here, so be careful when you put something
-PREP_STEPS = ['GaussBlur',
+PREP_STEPS = [#'GaussBlur',
             #'MedianFilter',
             #'bright',
             #'EDGE_ENHANCE',
             #'MedianFilter'
-            'Sharp'
+            #'Sharp'
             #'MaxFilter'
             ]
 

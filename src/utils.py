@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from params import *
 from datetime import datetime
 
 def to_cuda(elements):
@@ -21,7 +20,7 @@ def pre_processing_verbose(pre_processing_steps):
             print(f'{step}')
     return
 
-def save_result(model, model_name, accuracy, average_dice, class_dice, msg=None):
+def save_result(model, model_path, model_name, accuracy, average_dice, class_dice, msg=None):
     # Save performance
     """
     now = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
@@ -35,5 +34,5 @@ def save_result(model, model_name, accuracy, average_dice, class_dice, msg=None)
     """
 
     # Save model
-    torch.save(model.state_dict(), MODEL_PATH + model_name+'.pt')
-    print(f"Model state has been saved in {MODEL_PATH+model_name}")
+    torch.save(model.state_dict(), model_path + model_name+'.pt')
+    print(f"Model state has been saved in {model_path+model_name}")
