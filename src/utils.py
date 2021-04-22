@@ -3,8 +3,6 @@ import numpy as np
 
 from datetime import datetime
 
-from params import *
-
 def to_cuda(elements):
     """
     Transfers every object in elements to GPU VRAM if available.
@@ -25,6 +23,7 @@ def pre_processing_verbose(pre_processing_steps):
 
 def save_result(model, model_name, accuracy, average_dice, class_dice, msg=None):
     # Save performance
+    """
     now = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
     with open(MODEL_PATH + "performance.txt", "a") as text_file:
         print(f"data:{now}\ndataset:{DATA_PARAMS['dataset']}\n"
@@ -33,6 +32,7 @@ def save_result(model, model_name, accuracy, average_dice, class_dice, msg=None)
               f"avg_dice:{round(average_dice, 4)}\nclass_dice_scores:{str(class_dice)}\n", 
               f"description:{msg}",
               file = text_file)
+    """
 
     # Save model
     torch.save(model.state_dict(), MODEL_PATH + model_name+'.pt')

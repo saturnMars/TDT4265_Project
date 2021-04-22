@@ -1,5 +1,6 @@
 from pathlib import Path
 import albumentations as A
+from src.losses import dice_loss, cross_entropy_loss, dice_cross_entropy_loss
 
 #epochs
 EPOCHS =  1
@@ -18,6 +19,8 @@ MODEL_PATH = './models/'
 FILE_NAME = 'improved_unet.pt'
 
 LOAD = False
+
+LOSS = dice_cross_entropy_loss
 
 DATA_PARAMS = {
     'batch_size' : 8,
