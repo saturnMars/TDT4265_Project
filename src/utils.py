@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+from params import *
 from datetime import datetime
 
 def to_cuda(elements):
