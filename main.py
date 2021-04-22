@@ -21,7 +21,6 @@ def main(msg):
     # Outputs: Probabilities for each class for each pixel in different layer)
     unet = Unet2D(1, out_channels=4)
 
-    loss_fn = nn.CrossEntropyLoss()
     opt = torch.optim.Adam(unet.parameters(), lr=LEARN_RATE)
 
     if LOAD:
@@ -29,7 +28,7 @@ def main(msg):
 
     start = datetime.now()
     # Training process
-    train_loss, valid_loss, train_acc, valid_acc = train(unet, train_data, valid_data, loss_fn, opt, acc_metric, epochs=EPOCHS)
+    train_loss, valid_loss, train_acc, valid_acc = train(unet, train_data, valid_data, LOSS, opt, acc_metric, epochs=EPOCHS)
 
     end = datetime.now()
 
