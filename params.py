@@ -2,7 +2,7 @@ from pathlib import Path
 import albumentations as A
 
 #epochs
-EPOCHS =  50
+EPOCHS =  1
 
 #learning rate
 LEARN_RATE = 0.01
