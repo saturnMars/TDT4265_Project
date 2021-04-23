@@ -7,6 +7,7 @@ import h5py
 import cv2
 from pathlib import Path
 from scipy.signal import find_peaks
+import re
 
 
 def prepare_TTE_image_data_gt(directory_train, patient, type):
@@ -200,9 +201,9 @@ def prepare_TEE_to_ED_ES(path_hdf5, heartbeat_duration, user_response):
 def main():
 
     # Directory where there is the TRAINING CAMUS DATASET / TEE
-    directory_tte = Path('../training')
-    directory_tee = Path('../data/TEE')
-    directory_tee_labeled = ('../data/DataTEEGroundTruth')
+    directory_tte = Path('../CAMUS_dataset')
+    directory_tee = Path('../TEE/TEE_unlabeled')
+    directory_tee_labeled = ('../TEE/TEE_labeled')
     # Directory where i would like to store the images extracted from the CAMUS and TEE
     saving_directory_tte = Path('../data/extracted_CAMUS')
     saving_directory_tee = Path('../data/extracted_TEE')
@@ -215,6 +216,7 @@ def main():
     type_tte = ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
 
     # ################## Loop through all the patients (EXTRACTION OF THE TEE - WITHOUT GT) ##################
+
     verbose_index = 0
     user_response = input('Do you want to extract (it will be manual) the ES EVENTS for the TEE dataset? [y/n]')
     if str.lower(user_response) == 'n':
@@ -289,7 +291,7 @@ def main():
 
     # ################## Loop through all the patients (EXTRACTION OF THE TTE - CAMUS) ##################
     for patient in os.listdir(directory_tte):
-
+        pat_num = int(re.search(r'\d+', patient).group())
         # Looping through ['2CH_ED', '2CH_ES', '4CH_ED', '4CH_ES']
         for current_tte in type_tte:
 
@@ -301,8 +303,12 @@ def main():
             image_gt_tte_PIL = medimage_to_PIL(image_gt_tte)
 
             # Saving Images (GRAY DATA & GROUND TRUTH)
-            save_from_PIL_to_tif(image_data_tte_PIL, saving_directory_tte, patient, current_tte, 'gray', resize_dim=resize_dim)
-            save_from_PIL_to_tif(image_gt_tte_PIL, saving_directory_tte, patient, current_tte, 'gt', resize_dim=resize_dim)
+            if pat_num < 401:
+                save_from_PIL_to_tif(image_data_tte_PIL, saving_directory_tte, patient, current_tte, 'gray', resize_dim=resize_dim)
+                save_from_PIL_to_tif(image_gt_tte_PIL, saving_directory_tte, patient, current_tte, 'gt', resize_dim=resize_dim)
+            else:
+                save_from_PIL_to_tif(image_data_tte_PIL, saving_directory_tte, patient, current_tte, 'test_gray', resize_dim=resize_dim)
+                save_from_PIL_to_tif(image_gt_tte_PIL, saving_directory_tte, patient, current_tte, 'test_gt', resize_dim=resize_dim)
 
 if __name__ == "__main__":
     main()
