@@ -36,15 +36,10 @@ def main(msg):
 
     plot_loss_acc(train_loss, valid_loss, train_acc, valid_acc)
 
-    accuracy, average_dice, class_dice = test(unet, test_data, True)
-
-    # save the result
-    msg = 'Test the saving function'
-
-    file_name = 'test1'
+    accuracy, average_dice, class_dice = test(unet, test_data, False)
 
     # Save the model
-    save_result(unet, file_name, accuracy, average_dice, class_dice, msg = msg )
+    save_result(unet, MODEL_PATH, FILE_NAME, accuracy, average_dice, class_dice)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='train')
