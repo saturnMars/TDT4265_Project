@@ -16,13 +16,13 @@ def plot_loss_acc(train_loss, test_loss, train_acc, test_acc):
     # Plot training and test losses
     plt.figure(figsize=(10,8))
     plt.plot(train_loss, label='Train loss')
-    plt.plot(test_loss, label='Test loss')
+    plt.plot(test_loss, label='Valid loss')
     plt.legend()
     plt.show()
 
     plt.figure(figsize=(10,8))
     plt.plot(train_acc, label='Train accuracy')
-    plt.plot(test_acc, label='Test accuracy')
+    plt.plot(test_acc, label='Valid accuracy')
     plt.legend()
     plt.show()
 
