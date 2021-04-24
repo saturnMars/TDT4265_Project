@@ -11,5 +11,3 @@ def cross_entropy_loss(logits, true):
 
 def dice_cross_entropy_loss(logits, true):
     return cross_entropy_loss(logits, true)+dice_loss(logits, true)
-
-
