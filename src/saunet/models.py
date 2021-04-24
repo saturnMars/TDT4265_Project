@@ -237,7 +237,7 @@ class SAUNet(nn.Module): #SAUNet
         edge_out = self.sigmoid(ss)
 
         ### Canny Edge
-        im_arr = np.mean(x.cpu().numpy(), axis=1).astype(np.uint8)
+        im_arr = np.mean(x.cpu().detach().numpy(), axis=1).astype(np.uint8)
         canny = np.zeros((x_size[0], 1, x_size[2], x_size[3]))
         for i in range(x_size[0]):
             canny[i] = cv2.Canny(im_arr[i], 10, 100)
@@ -266,7 +266,7 @@ class SAUNet(nn.Module): #SAUNet
 
         att = F.interpolate(att, scale_factor=4, mode='bilinear', align_corners=True)
 
-        return x_out, edge_out#, att
+        return nn.functional.softmax(x_out, dim=1) #, edge_out, att
 
     def pad(self, x, y):
         diffX = y.shape[3] - x.shape[3]
