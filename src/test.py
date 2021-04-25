@@ -4,10 +4,26 @@ from src.visualize import show_segmentation, predb_to_mask
 
 import torch
 
+import numpy as np
+from PIL import Image
+
 from params import *
 
 # todo: to finish
+def predict(model, data):
+    pred_library = './final_test_predictions/'
+    for i in range(len(data)):
+        x = data[i]
+        file_path = data.files[i]
+        with torch.no_grad():
+            pred = model(torch.from_numpy(np.expand_dims(x, 0)).cuda())
 
+            numpy_pred = pred.argmax(1).cpu().numpy()
+            numpy_pred = np.squeeze((numpy_pred).astype(np.uint8).transpose([1,2,0]), axis=2)
+        image = Image.fromarray(numpy_pred)
+        image.save(pred_library+'pred_{}'.format(file_path.name))
+    print('saved preidctions to {}'.format(pred_library))
+        
 def test(model, data, visualize=False):
     # Predict on the validation data
     

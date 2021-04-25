@@ -9,33 +9,23 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-#load data from a folder
-class DatasetLoader(Dataset):
-    def __init__(self, gray_files, gt_dir, pytorch=True, prep_steps=None, transform=None, image_resolution=384):
+class DatasetLoaderNoGT(Dataset):
+    def __init__(self, gray_files, pytorch = True, prep_steps=None, image_resolution=384):
         super().__init__()
         
-        self.transform = transform
-
-        # Loop through the files in red folder and combine, into a dictionary, the other bands
-        self.files = [self.combine_files(f, gt_dir) for f in gray_files]
+        self.files = gray_files
+        
         self.pytorch = pytorch
         self.prep_steps = prep_steps
         self.resolution = image_resolution
         
-    def combine_files(self, gray_file: Path, gt_dir):
-        
-        files = {'gray': gray_file, 
-                 'gt': gt_dir/gray_file.name.replace('gray', 'gt')}
-
-        return files
-                                       
     def __len__(self):
         #legth of all files to be loaded
         return len(self.files)
-     
+
     def open_as_array(self, idx, invert=False):
         # Open ultrasound data
-        PIL_image = Image.open(self.files[idx]['gray']).resize((self.resolution, self.resolution))
+        PIL_image = Image.open(self.files[idx]).resize((self.resolution, self.resolution))
 
         # Pre_processing steps
         if self.prep_steps:
@@ -49,17 +39,32 @@ class DatasetLoader(Dataset):
         # normalize
         return (raw_us / np.iinfo(raw_us.dtype).max)
     
-
+    def __getitem__(self, idx):
+        x = self.open_as_array(idx, invert=self.pytorch).astype('float32')
+        
+        return x
+    
+#load data from a folder
+class DatasetLoader(DatasetLoaderNoGT):
+    def __init__(self, gray_files, gt_dir, pytorch=True, prep_steps=None, transform=None, image_resolution=384):
+        super().__init__(gray_files, pytorch, prep_steps, image_resolution)
+        
+        self.transform = transform
+        
+        # Loop through the files in red folder and combine, into a dictionary, the other band
+        self.files = gray_files
+        self.gt_files = [gt_dir/gray_file.name.replace('gray', 'gt') for gray_file in self.files]
+        
     def open_mask(self, idx, add_dims=False):
         #open mask file
-        raw_mask = np.array(Image.open(self.files[idx]['gt']).resize((self.resolution, self.resolution)))
+        raw_mask = np.array(Image.open(self.gt_files[idx]).resize((self.resolution, self.resolution)))
         #raw_mask = np.where(raw_mask>100, 1, 0)
         
         return np.expand_dims(raw_mask, 0) if add_dims else raw_mask
     
     def __getitem__(self, idx):
+        x = super().__getitem__(idx)
         #get the image and mask as arrays
-        x = self.open_as_array(idx, invert=self.pytorch).astype('float32')
         y = self.open_mask(idx, add_dims=False)
         
         if self.transform is not None:
@@ -77,6 +82,8 @@ class DatasetLoader(Dataset):
         arr = 256*self.open_as_array(idx)
         
         return Image.fromarray(arr.astype(np.uint8), 'RGB')
+
+
     
 def train_test_val_split(base_path, dataset, database_size):
     train_folder = 'train_gray'
@@ -141,15 +148,24 @@ def load_train_test_val(data_params, prep_steps=None, train_transform=None):
     return train_data, test_data, valid_data
 
 def load_tee(base_path, batch_size, prep_steps):
-  dataset = 'extracted_TEE'
-  files = [f for f in Path.joinpath(base_path, dataset, 'test_gray').iterdir() if not f.is_dir()]
+    dataset = 'extracted_TEE'
+    files = [f for f in Path.joinpath(base_path, dataset, 'test_gray').iterdir() if not f.is_dir()]
  
-  dataset = DatasetLoader(files, Path.joinpath(base_path, dataset, 'test_gt'), prep_steps = prep_steps)
-  print("TEE IMAGES:", len(dataset))
+    dataset = DatasetLoader(files, Path.joinpath(base_path, dataset, 'test_gt'), prep_steps = prep_steps)
+    print("TEE IMAGES:", len(dataset))
   
-  data = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    data = DataLoader(dataset, batch_size=batch_size, shuffle=True)
  
-  xb, yb = next(iter(data))
-  print(f"RAW TEE IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
+    xb, yb = next(iter(data))
+    print(f"RAW TEE IMAGES: {xb.shape}\n GT IMAGES: {yb.shape}\n")
     
-  return data
+    return data
+
+def load_tee_no_gt(base_path, prep_steps):
+    dataset = 'extracted_TEE'
+    files = [f for f in Path.joinpath(base_path, dataset, 'final_test').iterdir() if not f.is_dir()]
+    
+    dataset = DatasetLoaderNoGT(files, prep_steps=prep_steps)
+    print('TEE IMAGES wo. gt: ', len(dataset))
+    
+    return dataset

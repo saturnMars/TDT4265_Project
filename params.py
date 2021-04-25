@@ -3,7 +3,7 @@ import albumentations as A
 from src.losses import dice_loss, cross_entropy_loss, dice_cross_entropy_loss
 
 #epochs
-EPOCHS =  50
+EPOCHS =  1
 
 #learning rate
 LEARN_RATE = 0.01
